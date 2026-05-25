@@ -1,0 +1,23 @@
+# Build output
+build/
+*.o
+*.exe
+*.out
+*.obj
+
+# Data files (runtime)
+data/*.dat
+data/*.txt
+data/users/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
