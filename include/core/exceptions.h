@@ -50,6 +50,15 @@ public:
                         + ", hien co " + std::to_string(available)) {}
 };
 
+// Ném khi chi tiêu vượt hạn mức ngân sách của một danh mục
+class BudgetExceededException : public OPEPException {
+public:
+    BudgetExceededException(const std::string& category, double limit, double spent)
+        : OPEPException("Vuot han muc ngan sach [" + category + "]: "
+                        + "han muc " + std::to_string(limit)
+                        + ", da chi " + std::to_string(spent)) {}
+};
+
 } // namespace opep
 
 #endif // OPEP_EXCEPTIONS_H
