@@ -73,35 +73,39 @@ void Task::setDeadline(const std::string& newDeadline) {
 // --- displayInfo: hiển thị task dạng bảng ASCII ---
 
 void Task::displayInfo() const {
-    // Ký hiệu trạng thái trực quan
-    const std::string statusMark = completed ? "[x]" : "[ ]";
+    const std::string statusMark  = completed ? "[x]" : "[ ]";
     const std::string priorityTag = "[" + priorityToString(priority) + "]";
 
+    // Dùng static_cast để gọi operator<< của Record, không phải của Task
     std::cout << statusMark << " "
-              << *this           // gọi operator<< từ Record: [ID:x] date | title
+              << static_cast<const Record&>(*this)
               << " " << priorityTag;
 
-    if (!deadline.empty()) {
-        std::cout << " | Han: " << deadline;
-    }
+    if (!deadline.empty()) std::cout << " | Han: " << deadline;
     std::cout << "\n";
 }
 
-// --- operator>> đọc thuộc tính task từ stream (không in prompt) ---
-// Định dạng stream: title\nHIGH|MEDIUM|LOW\ndeadline\n
-// Module UI chịu trách nhiệm in prompt trước khi gọi operator>>
+// --- Serialization operator<< / operator>> cho Database<Task> ---
+// Format: "<id> <date> <completed>\n<title>\n<priority>\n<deadline>\n"
 
-std::istream& operator>>(std::istream& is, Task& task) {
-    std::string newTitle, priorityStr, newDeadline;
+std::ostream& operator<<(std::ostream& os, const Task& t) {
+    os << t.id << " " << t.date << " " << (t.completed ? 1 : 0) << "\n"
+       << t.title    << "\n"
+       << priorityToString(t.priority) << "\n"
+       << t.deadline << "\n";
+    return os;
+}
 
-    std::getline(is, newTitle);
+std::istream& operator>>(std::istream& is, Task& t) {
+    int completedInt = 0;
+    is >> t.id >> t.date >> completedInt;
+    is.ignore();
+    std::getline(is, t.title);
+    std::string priorityStr;
     std::getline(is, priorityStr);
-    std::getline(is, newDeadline);
-
-    task.setTitle(newTitle);
-    task.setPriority(stringToPriority(priorityStr));
-    task.setDeadline(newDeadline);
-
+    std::getline(is, t.deadline);
+    t.completed = (completedInt != 0);
+    t.priority  = stringToPriority(priorityStr);
     return is;
 }
 

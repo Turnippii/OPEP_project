@@ -26,6 +26,9 @@ private:
     std::string deadline;   // Hạn chót, định dạng YYYY-MM-DD (rỗng = không giới hạn)
 
 public:
+    // Default constructor cho Database<Task>::load()
+    Task() : Record(), completed(false), priority(Priority::MEDIUM) {}
+
     Task(int id,
          const std::string& date,
          const std::string& title,
@@ -45,7 +48,9 @@ public:
     // Override pure virtual từ Record
     void displayInfo() const override;
 
-    // operator>> đọc dữ liệu task từ stream (dùng khi load file hoặc nhập liệu)
+    // operator<< / operator>> cho serialization vào Database<Task>
+    // Format: "<id> <date> <completed>\n<title>\n<priority>\n<deadline>\n"
+    friend std::ostream& operator<<(std::ostream& os, const Task& task);
     friend std::istream& operator>>(std::istream& is, Task& task);
 };
 

@@ -14,6 +14,10 @@ protected:
     std::string date;   // Ngày tạo, định dạng YYYY-MM-DD
     std::string title;  // Tiêu đề / tên bản ghi
 
+protected:
+    // Default constructor chỉ dùng cho Database<T> serialization (T cần default-constructible)
+    Record() : id(0) {}
+
 public:
     // Constructor khởi tạo đầy đủ thuộc tính
     Record(int id, const std::string& date, const std::string& title);

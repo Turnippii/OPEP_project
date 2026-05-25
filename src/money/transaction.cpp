@@ -74,8 +74,18 @@ void Transaction::displayInfo() const {
     std::cout << "\n";
 }
 
-// --- operator>> ---
-// Định dạng mỗi trường trên một dòng: id, date, type, title, amount, category, note
+// --- Serialization operator<< / operator>> cho Database<Transaction> ---
+// Format: "<id> <date> <TYPE> <amount>\n<title>\n<category>\n<note>\n"
+
+std::ostream& operator<<(std::ostream& os, const Transaction& t) {
+    os << t.id << " " << t.date << " "
+       << transactionTypeToString(t.type) << " "
+       << std::fixed << std::setprecision(2) << t.amount << "\n"
+       << t.title    << "\n"
+       << t.category << "\n"
+       << t.note     << "\n";
+    return os;
+}
 
 std::istream& operator>>(std::istream& is, Transaction& t) {
     std::string typeStr;

@@ -26,6 +26,9 @@ private:
     std::string     note;      // Ghi chú thêm (có thể rỗng)
 
 public:
+    // Default constructor cho Database<Transaction>::load()
+    Transaction() : Record(), amount(0.0), type(TransactionType::INCOME), category("?") {}
+
     Transaction(int id,
                 const std::string& date,
                 const std::string& title,
@@ -48,7 +51,9 @@ public:
     // Override pure virtual từ Record
     void displayInfo() const override;
 
-    // operator>> đọc dữ liệu transaction từ istream (dùng khi load file)
+    // operator<< / operator>> cho serialization vào Database<Transaction>
+    // Format: "<id> <date> <TYPE> <amount>\n<title>\n<category>\n<note>\n"
+    friend std::ostream& operator<<(std::ostream& os, const Transaction& t);
     friend std::istream& operator>>(std::istream& is, Transaction& t);
 };
 

@@ -25,6 +25,18 @@ const std::vector<std::shared_ptr<Transaction>>& Wallet::getTransactions() const
     return transactions;
 }
 
+// --- loadTransaction (chỉ dùng khi khôi phục từ file) ---
+
+void Wallet::loadTransaction(const Transaction& t) {
+    if (t.getType() == TransactionType::INCOME)
+        balance += t.getAmount();
+    else
+        balance -= t.getAmount();
+    // Cập nhật nextId để tránh trùng ID khi thêm mới
+    if (t.getId() >= nextId) nextId = t.getId() + 1;
+    transactions.push_back(std::make_shared<Transaction>(t));
+}
+
 // --- addIncome ---
 
 std::shared_ptr<Transaction> Wallet::addIncome(double amount,

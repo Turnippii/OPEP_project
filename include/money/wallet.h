@@ -43,6 +43,10 @@ public:
                                             const std::string& date,
                                             const std::string& note = "");
 
+    // Nạp một transaction đã lưu từ file vào ví (không validate balance)
+    // Dùng khi load data, không dùng cho giao dịch thông thường
+    void loadTransaction(const Transaction& t);
+
     // Tổng thu nhập / chi tiêu tích lũy
     double totalIncome()  const;
     double totalExpense() const;
