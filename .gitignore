@@ -6,9 +6,8 @@ build/
 *.obj
 
 # Data files (runtime)
-data/*.dat
-data/*.txt
-data/users/
+data/*
+!data/.gitkeep
 
 # IDE
 .vscode/
