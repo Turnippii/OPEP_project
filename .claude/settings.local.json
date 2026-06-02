@@ -13,7 +13,11 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/task/task.cpp -o build/task.o)",
-      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/money/transaction.cpp -o build/transaction.o)"
+      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/money/transaction.cpp -o build/transaction.o)",
+      "Bash(make *)",
+      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c main.cpp -o build/main.o)",
+      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/ui/dashboard.cpp -o build/dashboard.o)",
+      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/money/budget.cpp -o build/budget.o)"
     ]
   }
 }

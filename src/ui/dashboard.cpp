@@ -4,9 +4,18 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 #include <ctime>
 
 namespace opep {
+
+// Tách year và month từ "YYYY-MM-DD" thành cặp số nguyên để so sánh an toàn
+static std::pair<int,int> parseYearMonth(const std::string& d) {
+    if (d.size() < 7) return {0, 0};
+    try {
+        return { std::stoi(d.substr(0, 4)), std::stoi(d.substr(5, 2)) };
+    } catch (...) { return {0, 0}; }
+}
 
 // --- Constructor ---
 
@@ -16,10 +25,17 @@ Dashboard::Dashboard(const Wallet& w, const TaskManager& tm, const std::string& 
 // --- Static helpers ---
 
 std::string Dashboard::getCurrentDate() {
-    std::time_t t  = std::time(nullptr);
-    std::tm*    tm = std::localtime(&t);
+    // Dùng chrono để lấy thời điểm hiện tại, sau đó chuyển sang local time
+    auto now      = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &t);   // thread-safe trên Windows
+#else
+    localtime_r(&t, &local);   // thread-safe trên POSIX
+#endif
     char buf[11];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d", &local);
     return buf;
 }
 
@@ -70,22 +86,27 @@ double Dashboard::getTodayExpense() const {
 }
 
 double Dashboard::getMonthIncome() const {
-    std::string month = getCurrentMonth(today);
+    // So sánh year và month dưới dạng số nguyên — tránh lỗi so sánh chuỗi khi date bị thừa ký tự
+    auto [curY, curM] = parseYearMonth(today);
     double total = 0.0;
-    for (const auto& t : wallet.getTransactions())
-        if (t->getType() == TransactionType::INCOME &&
-            t->getDate().substr(0, 7) == month)
+    for (const auto& t : wallet.getTransactions()) {
+        if (t->getType() != TransactionType::INCOME) continue;
+        auto [tY, tM] = parseYearMonth(t->getDate());
+        if (tY == curY && tM == curM)
             total += t->getAmount();
+    }
     return total;
 }
 
 double Dashboard::getMonthExpense() const {
-    std::string month = getCurrentMonth(today);
+    auto [curY, curM] = parseYearMonth(today);
     double total = 0.0;
-    for (const auto& t : wallet.getTransactions())
-        if (t->getType() == TransactionType::EXPENSE &&
-            t->getDate().substr(0, 7) == month)
+    for (const auto& t : wallet.getTransactions()) {
+        if (t->getType() != TransactionType::EXPENSE) continue;
+        auto [tY, tM] = parseYearMonth(t->getDate());
+        if (tY == curY && tM == curM)
             total += t->getAmount();
+    }
     return total;
 }
 

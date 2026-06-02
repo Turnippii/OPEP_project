@@ -92,12 +92,13 @@ bool Transaction::operator!=(const Transaction& other) const {
 // Format: "<id> <date> <TYPE> <amount>\n<title>\n<category>\n<note>\n"
 
 std::ostream& operator<<(std::ostream& os, const Transaction& t) {
+    // Nếu note rỗng, ghi "~" để khi load lại getline không đọc nhầm sang record tiếp theo
     os << t.id << " " << t.date << " "
        << transactionTypeToString(t.type) << " "
        << std::fixed << std::setprecision(2) << t.amount << "\n"
        << t.title    << "\n"
        << t.category << "\n"
-       << t.note     << "\n";
+       << (t.note.empty() ? "~" : t.note) << "\n";
     return os;
 }
 
@@ -108,6 +109,8 @@ std::istream& operator>>(std::istream& is, Transaction& t) {
     std::getline(is, t.title);
     std::getline(is, t.category);
     std::getline(is, t.note);
+    // "~" là sentinel cho note rỗng — khôi phục về chuỗi rỗng khi đọc
+    if (t.note == "~") t.note.clear();
     t.type = stringToTransactionType(typeStr);
     return is;
 }
