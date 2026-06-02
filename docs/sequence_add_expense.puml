@@ -1,0 +1,221 @@
+@startuml sequence_add_expense
+
+' ═══════════════════════════════════════════════════════════
+' OPEP — Sequence Diagram: Luồng Thêm Chi Tiêu
+' Nguồn: main.cpp (buildMoneyMenu → "Them chi tieu" lambda),
+'         src/money/wallet.cpp, src/money/budget.cpp
+' ═══════════════════════════════════════════════════════════
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam sequenceGroupBorderThickness 1.5
+skinparam defaultFontSize 11
+skinparam sequenceArrowThickness 1.2
+skinparam lifelineBorderColor #555555
+
+autonumber "<b>[0]"
+
+title <b>Luồng Thêm Chi Tiêu — OPEP</b>\nbuildMoneyMenu() → "Them chi tieu" action lambda
+
+actor       "User"          as U
+participant "Menu\n(moneyMenu)" as M
+participant "InputValidator" as IV
+participant "Budget"         as BDG
+participant "Wallet"         as W
+participant "Transaction"    as TX
+participant "Database\n<Transaction>" as DBT
+
+' ───────────────────────────────────────────────
+' BƯỚC 1: User chọn chức năng
+' ───────────────────────────────────────────────
+U  ->  M  : chọn [3] Thêm chi tiêu
+activate M
+M  -->  U : in "=== THEM CHI TIEU ==="
+
+' ───────────────────────────────────────────────
+' BƯỚC 2: Thu thập input từ User (validate từng field)
+' ───────────────────────────────────────────────
+group Thu thập thông tin chi tiêu [InputValidator re-prompt nếu sai]
+
+  M  ->  IV : readDouble("So tien (VND): ", min=1.0)
+  activate IV
+  note right of IV
+    Vòng lặp nội bộ:
+    - Yêu cầu nhập lại nếu <= 0 hoặc không phải số
+    - Throw InvalidInputException nếu stream lỗi (EOF)
+  end note
+  IV --> M  : amount : double
+  deactivate IV
+
+  M  ->  M  : pickCategory(wallet)
+  note right of M
+    Hiển thị danh mục đã dùng từ lịch sử giao dịch
+    [1] Danh muc A   [2] Danh muc B   [N+1] Nhập mới
+    → Nếu chọn "Nhập mới": gọi InputValidator::readString()
+  end note
+  M  -->  M  : category : string
+
+  M  ->  IV : readString("Mo ta: ", minLen=1)
+  activate IV
+  IV --> M  : title : string
+  deactivate IV
+
+  M  ->  IV : readString("Ghi chu (Enter bo qua): ", minLen=0)
+  activate IV
+  note right of IV : minLen=0 → cho phép bỏ qua (chuỗi rỗng)
+  IV --> M  : note : string
+  deactivate IV
+
+end
+
+' ───────────────────────────────────────────────
+' BƯỚC 3: Kiểm tra hạn mức ngân sách TRƯỚC khi ghi
+' (Thực tế: budget check xảy ra TRƯỚC wallet.addExpense)
+' ───────────────────────────────────────────────
+group Kiểm tra hạn mức ngân sách [try / catch InvalidInputException]
+
+  M  ->  BDG : getCategory(category)
+  activate BDG
+  note right of BDG
+    Tìm theo normalizeKey(category):
+    trim + lowercase → so sánh không phân biệt hoa thường
+    Throw InvalidInputException nếu chưa đặt hạn mức
+  end note
+
+  alt category CÓ hạn mức (limit > 0)
+
+    BDG --> M : const CategoryBudget& cb
+    deactivate BDG
+
+    M  ->  M  : projected = cb.spent + amount\nratio = projected / cb.limit
+
+    alt ratio >= 1.0  [VƯỢT hạn mức]
+
+      M  -->  U : "[!!] VUOT HAN MUC: Han muc 'category' la LIMIT VND,\n      ban dang chi vuot OVER VND"
+      M  ->  IV : confirm("Van muon ghi?")
+      activate IV
+      IV --> M  : proceed : bool
+      deactivate IV
+
+    else ratio >= 0.80  [CẢNH BÁO ≥80%]
+
+      M  -->  U : "[!] CANH BAO: Chi tieu nay se dat XX% han muc\n     'category' (PROJECTED/LIMIT VND)"
+      M  ->  IV : confirm("Van muon ghi?")
+      activate IV
+      IV --> M  : proceed : bool
+      deactivate IV
+
+    else ratio < 0.80  [AN TOÀN — tiếp tục không hỏi]
+
+      BDG --> M : const CategoryBudget& cb
+      deactivate BDG
+      M  ->  M  : proceed = true
+
+    end
+
+    opt proceed == false  [User huỷ]
+      M  ->  IV : pause()
+      M  -->  U : quay lại menu
+      return
+    end
+
+  else category CHƯA có hạn mức
+    note right of BDG
+      catch(InvalidInputException): bỏ qua hoàn toàn
+      proceed = true — không hiển thị cảnh báo gì
+    end note
+    deactivate BDG
+  end
+
+end
+
+' ───────────────────────────────────────────────
+' BƯỚC 4: Cập nhật Budget (tracking spent)
+' ───────────────────────────────────────────────
+M  ->  BDG : recordExpense(category, amount)
+activate BDG
+note right of BDG
+  key = normalizeKey(category)
+  Nếu chưa có entry → tạo mới với limit=0
+  cb.spent += amount
+  Throw BudgetExceededException nếu cb.spent > limit
+  (bắt và im lặng ở đây vì user đã xác nhận ở trên)
+end note
+BDG --> M  : warn : bool  (true nếu spent >= 80% limit)
+deactivate BDG
+
+' ───────────────────────────────────────────────
+' BƯỚC 5: Ghi giao dịch vào Wallet
+' ───────────────────────────────────────────────
+M  ->  W  : addExpense(amount, category, title, today(), note)
+activate W
+
+note right of W
+  ┌──────────────────────────────────┐
+  │  ENCAPSULATION — Wallet::balance │
+  │  balance là PRIVATE field        │
+  │  Không có setBalance()           │
+  │  Chỉ thay đổi tại đây            │
+  │  sau khi đã validate đầy đủ      │
+  └──────────────────────────────────┘
+end note
+
+' Validate trong Wallet
+alt amount <= 0
+  W  ->  W  : throw InvalidInputException("So tien chi tieu phai > 0")
+  W  --> M  : <<throws>> InvalidInputException
+  M  ->  M  : catch → in lỗi, pause, return
+end
+
+alt amount > balance  [số dư không đủ]
+  W  ->  W  : throw InsufficientBalanceException(amount, balance)
+  W  --> M  : <<throws>> InsufficientBalanceException
+  M  ->  M  : catch → in lỗi, pause, return
+end
+
+' Tạo Transaction mới
+W  ->  TX  : make_shared<Transaction>(nextId++, today(), title,\n             amount, EXPENSE, category, note)
+activate TX
+note right of TX
+  Transaction kế thừa Record:
+  id, date, title ← Record
+  amount, type, category, note ← Transaction
+  Constructor validate: amount >= 0, category không rỗng
+end note
+TX --> W   : shared_ptr<Transaction> txn
+deactivate TX
+
+W  ->  W  : transactions.push_back(txn)
+W  ->  W  : balance -= amount
+note right of W
+  Dòng duy nhất trong codebase giảm balance
+  Invariant bất biến: balance không bao giờ âm
+  (đã kiểm tra amount > balance ở trên)
+end note
+W  --> M  : shared_ptr<Transaction>
+deactivate W
+
+' ───────────────────────────────────────────────
+' BƯỚC 6: Lưu dữ liệu xuống file
+' ───────────────────────────────────────────────
+M  ->  DBT : Database<Transaction>::save(wallet.getTransactions())
+activate DBT
+note right of DBT
+  operator<<(os, Transaction) cho mỗi record
+  → ghép thành plaintext → encryptToFile() → ghi file binary
+  Format mỗi record:
+    "<id> <date> EXPENSE <amount>\\n<title>\\n<category>\\n<note>\\n"
+  Note rỗng được thay bằng "~" (sentinel)
+end note
+DBT --> M  : (void) — file đã được cập nhật
+deactivate DBT
+
+' ───────────────────────────────────────────────
+' BƯỚC 7: Thông báo thành công
+' ───────────────────────────────────────────────
+M  -->  U : "[OK] Da ghi chi tieu!"
+M  ->  IV : pause("Nhan Enter de tiep tuc...")
+IV --> U  : (chờ Enter)
+deactivate M
+
+@enduml

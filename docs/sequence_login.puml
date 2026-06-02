@@ -1,0 +1,203 @@
+@startuml sequence_login
+
+' ═══════════════════════════════════════════════════════════
+' OPEP — Sequence Diagram: Luồng Đăng Nhập
+' Nguồn: src/data/auth.cpp, src/data/file_manager.h,
+'         src/data/encryption.cpp, main.cpp (showAuthMenu, runSession)
+' ═══════════════════════════════════════════════════════════
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam sequenceGroupBorderThickness 1.5
+skinparam defaultFontSize 11
+skinparam sequenceArrowThickness 1.2
+skinparam lifelineBorderColor #555555
+
+autonumber "<b>[0]"
+
+title <b>Luồng Đăng Nhập — OPEP</b>\nshowAuthMenu() → AuthManager::login() → runSession()
+
+actor       "User"                         as U
+participant "Menu\n(authMenu)"             as M
+participant "AuthManager"                  as AM
+participant "Database<User>"               as DBU
+participant "Encryption"                   as ENC
+participant "Wallet"                       as W
+participant "TaskManager"                  as TM
+participant "Budget"                       as BDG
+participant "Database<Transaction/Task>"   as DBD
+participant "Dashboard"                    as DASH
+
+' ───────────────────────────────────────────────
+' BƯỚC 1: User nhập thông tin đăng nhập
+' ───────────────────────────────────────────────
+U  ->  M  : chọn [1] Đăng nhập
+activate M
+
+M  ->  M  : InputValidator::readString("Username: ", 3, 20)
+note right of M
+  Re-prompt tự động nếu username
+  rỗng hoặc sai độ dài
+end note
+
+M  ->  M  : InputValidator::readPassword("Password: ", 1)
+note right of M
+  Ký tự được che bằng '*'
+  dùng _getch() (Windows) / termios (Linux)
+end note
+
+' ───────────────────────────────────────────────
+' BƯỚC 2: Gọi AuthManager::login()
+' ───────────────────────────────────────────────
+M  ->  AM : login(username, password)
+activate AM
+
+AM ->  DBU : exists()
+activate DBU
+DBU --> AM : true / false
+deactivate DBU
+
+' AuthManager check file trước khi load
+alt file "data/users.db" không tồn tại
+  AM ->  AM  : throwFail() — throw AuthenticationException
+  note right of AM : Không phân biệt "sai username" vs\n"sai password" — tránh user enumeration
+  AM --> M   : <<throws>> AuthenticationException
+  M  ->  M   : catch(OPEPException& e)\n cout << "[LOI] " << e.what()
+  M  -->  U  : in thông báo lỗi
+end
+
+' ───────────────────────────────────────────────
+' BƯỚC 3: Load và giải mã danh sách User
+' ───────────────────────────────────────────────
+AM ->  DBU : load()
+activate DBU
+
+  DBU ->  DBU : đọc "data/users.db" (std::ios::binary)
+  DBU ->  ENC : decryptFromFile(rawBytes, "OPEP2024")
+  activate ENC
+    ENC ->  ENC : hexDecode(rawBytes)
+    ENC ->  ENC : xorCipher(decoded, key)
+    note right of ENC
+      Symmetric: xorCipher(xorCipher(data)) == data
+      Kết hợp hex encode để file an toàn trên mọi OS
+    end note
+  ENC --> DBU : plaintext (users.db nội dung gốc)
+  deactivate ENC
+
+  DBU ->  DBU : tách theo "---OPEP---\\n" (RECORD_SEP)
+  loop mỗi chunk
+    DBU -> DBU : istringstream(chunk) >> User\n(operator>> đọc 3 dòng: username, hash, date)
+  end
+
+DBU --> AM : vector<User>
+deactivate DBU
+
+' ───────────────────────────────────────────────
+' BƯỚC 4: Hash password nhập vào và so sánh
+' ───────────────────────────────────────────────
+AM ->  ENC : hashPassword(password)
+activate ENC
+note right of ENC
+  Một chiều: XOR + Caesar shift + hexEncode
+  Không thể giải ngược — chỉ dùng để so sánh
+end note
+ENC --> AM : inputHash
+deactivate ENC
+
+AM ->  AM  : tìm User có username == input\nvà passwordHash == inputHash
+
+' ───────────────────────────────────────────────
+' BƯỚC 5: Phân nhánh kết quả
+' ───────────────────────────────────────────────
+alt username tồn tại VÀ hash KHỚP  [đăng nhập thành công]
+
+  AM --> M : shared_ptr<User>
+  deactivate AM
+  note over M : Bắt đầu runSession(user, auth)\n— khởi tạo các đối tượng cho phiên làm việc
+
+  ' ── Khởi tạo dữ liệu phiên ──
+  M  ->  W   : new Wallet(username, 0.0)
+  activate W
+  M  ->  TM  : new TaskManager()
+  activate TM
+  M  ->  BDG : new Budget(currentMonth())
+  activate BDG
+
+  ' ── Load transactions từ file ──
+  M  ->  DBD : Database<Transaction>::load()\n"data/<username>/transactions.db"
+  activate DBD
+    DBD ->  ENC : decryptFromFile(rawBytes, key)
+    activate ENC
+    ENC --> DBD : plaintext
+    deactivate ENC
+    DBD ->  DBD : operator>>(is, Transaction) cho từng record
+  DBD --> M   : vector<Transaction>
+  deactivate DBD
+
+  loop mỗi Transaction t
+    M ->  W  : loadTransaction(t)
+    note right of W
+      balance += t.amount (INCOME)
+      balance -= t.amount (EXPENSE)
+      Không validate — chỉ dùng khi khôi phục từ file
+    end note
+  end
+
+  ' ── Load tasks từ file ──
+  M  ->  DBD : Database<Task>::load()\n"data/<username>/tasks.db"
+  activate DBD
+    DBD ->  ENC : decryptFromFile(rawBytes, key)
+    activate ENC
+    ENC --> DBD : plaintext
+    deactivate ENC
+    DBD ->  DBD : operator>>(is, Task) cho từng record
+  DBD --> M   : vector<Task>
+  deactivate DBD
+
+  loop mỗi Task t
+    M ->  TM : addTask(make_unique<Task>(t))
+    note right of TM
+      TaskManager giữ unique_ptr<Task>
+      — sở hữu độc quyền, tự delete khi xóa
+    end note
+  end
+
+  ' ── Nạp hạn mức ngân sách và đồng bộ ──
+  M  ->  BDG : loadLimits("data/<username>/budget.cfg")
+  note right of BDG
+    File plain text (không mã hóa)
+    Format: "YYYY-MM\\ncategory|limit\\n..."
+    Bỏ qua nếu file không tồn tại hoặc sai tháng
+  end note
+
+  M  ->  BDG : syncFromTransactions(wallet.getTransactions())
+  note right of BDG
+    Reset spent = 0 cho mọi category
+    Rồi cộng dồn từng EXPENSE trong tháng hiện tại
+    → đảm bảo spent luôn nhất quán với transactions
+  end note
+
+  ' ── Hiển thị Dashboard ──
+  M  ->  DASH : new Dashboard(wallet, taskManager, username)
+  M  ->  DASH : render()
+  activate DASH
+  DASH --> U  : Dashboard ASCII (số dư, thu/chi tháng, task sắp đến hạn)
+  deactivate DASH
+
+  M  -->  U   : vào vòng lặp mainMenu.run()
+
+else username KHÔNG tồn tại HOẶC hash SAI  [đăng nhập thất bại]
+
+  AM ->  AM  : throwFail()\n→ throw AuthenticationException("Ten dang nhap hoac mat khau khong dung")
+  AM --> M   : <<throws>> AuthenticationException
+  deactivate AM
+
+  M  ->  M   : catch(OPEPException& e)\n cout << "\\n  [LOI] " << e.what() << "\\n"
+  M  ->  M   : InputValidator::pause()
+  M  -->  U  : hiển thị lỗi, quay lại authMenu
+
+end
+
+deactivate M
+
+@enduml
