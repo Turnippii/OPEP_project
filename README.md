@@ -3,12 +3,12 @@
 <div align="center">
 
 ```
- ██████╗ ██████╗ ███████╗██████╗
-██╔═══██╗██╔══██╗██╔════╝██╔══██╗
-██║   ██║██████╔╝█████╗  ██████╔╝
-██║   ██║██╔═══╝ ██╔══╝  ██╔═══╝
-╚██████╔╝██║     ███████╗██║
- ╚═════╝ ╚═╝     ╚══════╝╚═╝
+ ██████╗  ██████╗ ██████╗ 
+██╔═══██╗██╔═══██╗██╔══██╗
+██║   ██║██║   ██║██████╔╝
+██║   ██║██║   ██║██╔═══╝
+╚██████╔╝╚██████╔╝██║   
+  ╚═════╝ ╚═════╝ ╚═╝     
 ```
 
 **Ứng dụng console quản lý chi tiêu và công việc cá nhân, viết bằng C++17 thuần**
@@ -454,11 +454,11 @@ Dự án này là **đồ án học thuật** thuộc môn **Lập trình Hướ
 
 | | |
 |---|---|
-| 📧 **Email nhóm** | `[email-nhom@example.com]` |
-| 🐙 **GitHub** | `https://github.com/<username>/OPEP_project` |
-| 🏫 **Trường** | [Tên trường đại học] |
-| 📚 **Môn học** | Lập trình Hướng đối tượng C++ |
-| 📅 **Học kỳ** | [Học kỳ — Năm học] |
+| 📧 **Email nhóm** | `` |
+| 🐙 **GitHub** | `https://github.com/Turnippii/OPEP_project` |
+| 🏫 **Trường** | Đại học Công nghệ kỹ thuật TP HCM |
+| 📚 **Môn học** | Lập trình Hướng đối tượng và kỹ thuật phần mềm|
+|
 
 ---
 
