@@ -13,6 +13,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include <ctime>
 
 namespace fs = std::filesystem;
@@ -152,6 +153,37 @@ static void buildTaskMenu(Menu&              taskMenu,
     });
 }
 
+// ── Chọn danh mục từ lịch sử hoặc nhập mới ──────────────────────────────────
+// Thu thập category đã dùng trong wallet, hiển thị danh sách đánh số,
+// cho phép chọn theo số hoặc gõ tên mới.
+
+static std::string pickCategory(const Wallet& wallet) {
+    // Thu thập danh mục duy nhất từ lịch sử giao dịch (giữ thứ tự xuất hiện)
+    std::vector<std::string> cats;
+    for (const auto& t : wallet.getTransactions()) {
+        const std::string& c = t->getCategory();
+        if (std::find(cats.begin(), cats.end(), c) == cats.end())
+            cats.push_back(c);
+    }
+
+    if (cats.empty())
+        return InputValidator::readString("  Danh muc: ");
+
+    std::cout << "  Danh muc co san:\n";
+    for (std::size_t i = 0; i < cats.size(); ++i)
+        std::cout << "    [" << (i + 1) << "] " << cats[i] << "\n";
+    std::cout << "    [" << (cats.size() + 1) << "] Nhap danh muc moi\n";
+
+    int choice = InputValidator::readInt(
+        "  Chon (1-" + std::to_string(cats.size() + 1) + "): ",
+        1, static_cast<int>(cats.size() + 1)
+    );
+
+    if (choice == static_cast<int>(cats.size() + 1))
+        return InputValidator::readString("  Ten danh muc moi: ");
+    return cats[choice - 1];
+}
+
 // ── Sub-menu: Money ───────────────────────────────────────────────────────────
 
 static void buildMoneyMenu(Menu&              moneyMenu,
@@ -188,12 +220,30 @@ static void buildMoneyMenu(Menu&              moneyMenu,
     moneyMenu.addItem("Them chi tieu", [&]() {
         std::cout << "\n=== THEM CHI TIEU ===\n";
         double      amt   = InputValidator::readDouble("  So tien (VND): ", 1.0);
-        std::string cat   = InputValidator::readString("  Danh muc (An uong/Di lai/Mua sam): ");
+        std::string cat   = pickCategory(wallet);
         std::string title = InputValidator::readString("  Mo ta: ");
         std::string note  = InputValidator::readString("  Ghi chu (Enter bo qua): ", 0);
 
+        // Canh bao truoc khi ghi: kiem tra han muc budget cua danh muc vua chon
+        try {
+            const auto& cb = budget.getCategory(cat);
+            if (cb.limit > 0.0) {
+                double projected = cb.spent + amt;
+                double ratio     = projected / cb.limit;
+                if (ratio >= 1.0) {
+                    std::cout << "  [!!] Giao dich nay se VUOT han muc '"
+                              << cat << "'! (hien dung "
+                              << static_cast<int>(cb.usageRatio() * 100) << "%)\n";
+                } else if (ratio >= WARNING_THRESHOLD) {
+                    std::cout << "  [!]  Sau giao dich nay se dung "
+                              << static_cast<int>(ratio * 100)
+                              << "% han muc '" << cat << "'.\n";
+                }
+            }
+        } catch (const InvalidInputException&) { /* chua co budget cho danh muc nay */ }
+
         // Ghi vào budget trước (có thể ném BudgetExceededException)
-        bool warn = false;
+        bool warn     = false;
         bool budgetOk = true;
         try {
             warn = budget.recordExpense(cat, amt);
@@ -227,6 +277,58 @@ static void buildMoneyMenu(Menu&              moneyMenu,
         std::cout << "  [OK] Han muc " << cat << " = " << lim << " VND/thang\n";
         InputValidator::pause();
     });
+}
+
+// ── Demo đa hình động ─────────────────────────────────────────────────────────
+// Minh họa: cùng một dòng r->displayInfo() nhưng runtime gọi đúng phiên bản
+// của Task hoặc Transaction nhờ vtable — không cần biết kiểu thực của đối tượng.
+
+static void demoPolymorphism(const TaskManager& taskMgr, const Wallet& wallet) {
+    std::cout << "\n";
+    std::cout << "===== DEMO DA HINH DONG (Dynamic Polymorphism) =====\n";
+    std::cout << "  Cung 1 dong code  r->displayInfo()  nhung output khac nhau\n";
+    std::cout << "  tuy doi tuong that la Task hay Transaction.\n";
+    std::cout << "  Day la da hinh dong qua vtable (virtual dispatch).\n";
+    std::cout << "-----------------------------------------------------\n";
+
+    // Thu thập con trỏ Record* trỏ tới các đối tượng thực trong bộ nhớ.
+    // Vector này KHÔNG sở hữu bộ nhớ — lifetime do TaskManager/Wallet quản lý.
+    std::vector<const Record*> records;
+
+    // Lấy tối đa 3 Task (kiểu thực: Task, kế thừa Record)
+    const auto& tasks = taskMgr.getAll();
+    std::size_t takeTasks = std::min(tasks.size(), std::size_t{3});
+    for (std::size_t i = 0; i < takeTasks; ++i)
+        records.push_back(tasks[i].get());   // unique_ptr<Task> → Task* → Record*
+
+    // Lấy tối đa 3 Transaction (kiểu thực: Transaction, kế thừa Record)
+    const auto& txns = wallet.getTransactions();
+    std::size_t takeTxns = std::min(txns.size(), std::size_t{3});
+    for (std::size_t i = 0; i < takeTxns; ++i)
+        records.push_back(txns[i].get());    // shared_ptr<Transaction> → Transaction* → Record*
+
+    if (records.empty()) {
+        std::cout << "  (Chua co du lieu. Hay them Task hoac Giao dich truoc.)\n";
+    } else {
+        std::cout << "  " << records.size()
+                  << " doi tuong (Task + Transaction) qua con tro Record*:\n\n";
+
+        for (const Record* r : records) {
+            // *** DONG THE HIEN DA HINH DONG ***
+            // Con tro 'r' co kieu Record* nhung doi tuong that la Task hoac Transaction.
+            // C++ tra cuu vtable tai runtime de goi dung displayInfo() cua lop con —
+            // mot dong code, nhieu hanh vi khac nhau.
+            r->displayInfo();
+        }
+    }
+
+    std::cout << "\n-----------------------------------------------------\n";
+    std::cout << "  Dong code the hien da hinh dong (main.cpp):\n";
+    std::cout << "    for (const Record* r : records) r->displayInfo();\n";
+    std::cout << "  -> r chi biet kieu la Record*, nhung vtable dispatch\n";
+    std::cout << "     dung phien ban displayInfo() cua kieu that luc runtime.\n";
+    std::cout << "=====================================================\n\n";
+    InputValidator::pause();
 }
 
 // ── Session: sau khi đăng nhập ────────────────────────────────────────────────
@@ -263,6 +365,10 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
         budget.syncFromTransactions(wallet.getTransactions());
         Dashboard(wallet, tm, uname).render();
         InputValidator::pause();
+    });
+
+    mainMenu.addItem("Demo Polymorphism (xem da hinh dong)", [&]() {
+        demoPolymorphism(tm, wallet);
     });
 
     mainMenu.addItem("Doi mat khau", [&]() {
