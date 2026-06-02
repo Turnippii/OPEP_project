@@ -363,17 +363,15 @@ data (hồng)          ui (tím)              └── Budget
 
 ---
 
-## 👥 Thành Viên Nhóm
+## 👥 Thanh Viên Nhóm
 
 | STT | Họ và Tên | MSSV |
-|:---:|---|---|---|---|
+| :---: | :--- | :--- |
 | 1 | `Vũ Quốc Bảo` | `23139004` |
-| 2 | `Nguyễn Hiếu Liêm` | `23139024` | 
-| 3 | `Lê Nhật Nam` | `23139029` | 
-| 4 | `Trần Ngọc Thiện` | `23139045` | 
-| 5 | `Nguyễn Duy Vương` | `23139051` | 
-
-> 📝 **Hướng dẫn cập nhật:** Thay `[Tên TVx]` và `[MSSVx]` bằng thông tin thật của nhóm.
+| 2 | `Nguyễn Hiếu Liêm` | `23139024` |
+| 3 | `Lê Nhật Nam` | `23139029` |
+| 4 | `Trần Ngọc Thiện` | `23139045` |
+| 5 | `Nguyễn Duy Vương` | `23139051` |
 
 ---
 
