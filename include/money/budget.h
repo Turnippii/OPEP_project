@@ -67,6 +67,12 @@ public:
     // Hiển thị bảng ngân sách với progress bar ASCII
     void displayBudget() const;
 
+    // Lưu giới hạn ngân sách ra file (chỉ lưu limit, spent tính lại từ transactions)
+    void saveLimits(const std::string& filename) const;
+
+    // Nạp giới hạn ngân sách từ file; bỏ qua nếu file không tồn tại hoặc sai tháng
+    void loadLimits(const std::string& filename);
+
     // operator<< in tóm tắt ngân sách ra ostream
     friend std::ostream& operator<<(std::ostream& os, const Budget& budget);
 };

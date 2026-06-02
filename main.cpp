@@ -224,39 +224,42 @@ static void buildMoneyMenu(Menu&              moneyMenu,
         std::string title = InputValidator::readString("  Mo ta: ");
         std::string note  = InputValidator::readString("  Ghi chu (Enter bo qua): ", 0);
 
-        // Canh bao truoc khi ghi: kiem tra han muc budget cua danh muc vua chon
+        // Canh bao budget truoc khi ghi; hoi y/n neu >= 80% han muc
+        bool proceed = true;
         try {
             const auto& cb = budget.getCategory(cat);
             if (cb.limit > 0.0) {
                 double projected = cb.spent + amt;
                 double ratio     = projected / cb.limit;
                 if (ratio >= 1.0) {
-                    std::cout << "  [!!] Giao dich nay se VUOT han muc '"
-                              << cat << "'! (hien dung "
-                              << static_cast<int>(cb.usageRatio() * 100) << "%)\n";
+                    long long over = static_cast<long long>(projected - cb.limit);
+                    long long lim  = static_cast<long long>(cb.limit);
+                    std::cout << "  [!!] VUOT HAN MUC: Han muc '" << cat
+                              << "' la " << lim << " VND, ban dang chi vuot "
+                              << over << " VND\n";
+                    proceed = InputValidator::confirm("  Van muon ghi?");
                 } else if (ratio >= WARNING_THRESHOLD) {
-                    std::cout << "  [!]  Sau giao dich nay se dung "
-                              << static_cast<int>(ratio * 100)
-                              << "% han muc '" << cat << "'.\n";
+                    int pct       = static_cast<int>(ratio * 100);
+                    long long proj = static_cast<long long>(projected);
+                    long long lim  = static_cast<long long>(cb.limit);
+                    std::cout << "  [!] CANH BAO: Chi tieu nay se dat " << pct
+                              << "% han muc '" << cat << "' ("
+                              << proj << "/" << lim << " VND)\n";
+                    proceed = InputValidator::confirm("  Van muon ghi?");
                 }
             }
         } catch (const InvalidInputException&) { /* chua co budget cho danh muc nay */ }
 
-        // Ghi vào budget trước (có thể ném BudgetExceededException)
-        bool warn     = false;
-        bool budgetOk = true;
+        if (!proceed) { InputValidator::pause(); return; }
+
+        // Cap nhat budget (neu vuot han muc va user da xac nhan thi bo qua exception)
         try {
-            warn = budget.recordExpense(cat, amt);
-        } catch (const BudgetExceededException& e) {
-            std::cout << "  [!] " << e.what() << "\n";
-            budgetOk = InputValidator::confirm("  Tiep tuc chi vuot han muc?");
-            if (!budgetOk) { InputValidator::pause(); return; }
-        }
+            budget.recordExpense(cat, amt);
+        } catch (const BudgetExceededException&) { /* user da xac nhan o tren */ }
 
         wallet.addExpense(amt, cat, title, today(), note);
         saveData(username, wallet, tm);
         std::cout << "  [OK] Da ghi chi tieu!\n";
-        if (warn) std::cout << "  [!] CANH BAO: Da dung >= 80% han muc '" << cat << "'!\n";
         InputValidator::pause();
     });
 
@@ -274,6 +277,7 @@ static void buildMoneyMenu(Menu&              moneyMenu,
         std::string cat = InputValidator::readString("  Ten danh muc: ");
         double      lim = InputValidator::readDouble("  Han muc (VND/thang): ", 0.0);
         budget.setLimit(cat, lim);
+        budget.saveLimits(userDir(username) + "budget.cfg");
         std::cout << "  [OK] Han muc " << cat << " = " << lim << " VND/thang\n";
         InputValidator::pause();
     });
@@ -343,6 +347,7 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
 
     std::cout << "\n  Dang tai du lieu...\n";
     loadData(uname, wallet, tm, nextTaskId);
+    budget.loadLimits(userDir(uname) + "budget.cfg");
     budget.syncFromTransactions(wallet.getTransactions());
 
     // Dashboard lần đầu
@@ -390,6 +395,7 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
     // Lưu khi thoát phiên
     std::cout << "\n  Dang luu du lieu...\n";
     saveData(uname, wallet, tm);
+    budget.saveLimits(userDir(uname) + "budget.cfg");
     std::cout << "  Tam biet, " << uname << "!\n\n";
 }
 

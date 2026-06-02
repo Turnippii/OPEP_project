@@ -17,7 +17,10 @@
       "Bash(make *)",
       "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c main.cpp -o build/main.o)",
       "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/ui/dashboard.cpp -o build/dashboard.o)",
-      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/money/budget.cpp -o build/budget.o)"
+      "Bash(g++ -std=c++17 -Wall -Wextra -Iinclude -c src/money/budget.cpp -o build/budget.o)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\OPEP_project\\\\include\\\\money\", \"C:\\\\OPEP_project\\\\src\\\\money\", \"C:\\\\OPEP_project\\\\include\\\\ui\", \"C:\\\\OPEP_project\\\\src\\\\ui\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
+      "Bash(TEMP=/tmp TMPDIR=/tmp make *)",
+      "PowerShell(make *)"
     ]
   }
 }

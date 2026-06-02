@@ -2,22 +2,59 @@
 #include "../../include/core/exceptions.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <algorithm>
 #include <cctype>
+#include <stdexcept>
 
 namespace opep {
 
-// Chuẩn hóa tên category để so sánh không phân biệt hoa thường / khoảng trắng
-// Giữ nguyên dấu tiếng Việt UTF-8 (multi-byte), chỉ lowercase ASCII
+// Chuẩn hóa tên category: trim đầu/cuối, collapse khoảng trắng giữa, lowercase ASCII
+// Giữ nguyên bytes tiếng Việt UTF-8 (multi-byte) vì tolower không áp dụng được
 static std::string normalizeKey(const std::string& s) {
     size_t start = s.find_first_not_of(" \t\r\n");
     if (start == std::string::npos) return "";
     size_t end = s.find_last_not_of(" \t\r\n");
     std::string r;
     r.reserve(end - start + 1);
-    for (size_t i = start; i <= end; ++i)
-        r.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(s[i]))));
+    bool prevSpace = false;
+    for (size_t i = start; i <= end; ++i) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        if (c == ' ' || c == '\t') {
+            if (!prevSpace) { r.push_back(' '); prevSpace = true; }
+        } else {
+            r.push_back(static_cast<char>(std::tolower(c)));
+            prevSpace = false;
+        }
+    }
     return r;
+}
+
+// Số code point UTF-8 (= số ký tự hiển thị; bỏ continuation byte 10xxxxxx)
+static int utf8Width(const std::string& s) {
+    int w = 0;
+    for (unsigned char c : s)
+        if ((c & 0xC0) != 0x80) ++w;
+    return w;
+}
+
+// Trả về chuỗi s đã cắt/pad vừa đúng `width` cột hiển thị (left-aligned)
+// Nếu dài hơn → cắt ở (width-3) ký tự và thêm "..."
+static std::string utf8FitLeft(const std::string& s, int width) {
+    int w = utf8Width(s);
+    if (w <= width)
+        return s + std::string(width - w, ' ');
+    // Cắt: tìm vị trí byte sau (width-3) code points
+    int target = width - 3;
+    int cur = 0;
+    size_t i = 0;
+    while (i < s.size() && cur < target) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t cl = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : (c >= 0xC0) ? 2 : 1;
+        cur++;
+        i += cl;
+    }
+    return s.substr(0, i) + "...";
 }
 
 // --- CategoryBudget ---
@@ -141,10 +178,8 @@ void Budget::displayBudget() const {
     }
 
     for (const auto& [key, cb] : categories) {
-        // Cắt tên category nếu > W_CAT ký tự
-        std::string dispCat = cb.category;
-        if (static_cast<int>(dispCat.size()) > W_CAT)
-            dispCat = dispCat.substr(0, W_CAT - 3) + "...";
+        // Cắt và pad tên category theo chiều rộng hiển thị UTF-8 (không dùng setw)
+        std::string dispCat = utf8FitLeft(cb.category, W_CAT);
 
         // Phần trăm và progress bar
         int pct    = (cb.limit > 0.0) ? static_cast<int>(cb.usageRatio() * 100) : 0;
@@ -157,14 +192,14 @@ void Budget::displayBudget() const {
         // Chuỗi % (right-aligned trong W_PCT)
         std::string pctStr = (cb.limit > 0.0) ? (std::to_string(pct) + "%") : "n/a";
 
-        // Trang thái
+        // Trạng thái
         std::string status;
         if (cb.limit <= 0.0)       status = "(khong gioi han)";
         else if (cb.isExceeded())  status = "[!!] VUOT HAN MUC!";
         else if (cb.isNearLimit()) status = "[!]  CANH BAO >=80%";
         else                       status = "[ ]  OK";
 
-        std::cout << std::left  << std::setw(W_CAT)   << dispCat
+        std::cout << dispCat  // đã có padding chính xác W_CAT cột
                   << std::right << std::fixed << std::setprecision(0)
                   << std::setw(W_SPENT) << cb.spent
                   << std::setw(W_LIMIT) << (cb.limit > 0.0 ? cb.limit : 0.0)
@@ -181,6 +216,34 @@ void Budget::displayBudget() const {
               << std::setw(W_SPENT) << totalSpent()
               << std::setw(W_LIMIT) << totalLimit()
               << "\n\n";
+}
+
+// --- Persistence: lưu/nạp giới hạn ngân sách ---
+
+void Budget::saveLimits(const std::string& filename) const {
+    std::ofstream f(filename);
+    if (!f.is_open()) return;
+    f << month << "\n";
+    for (const auto& [key, cb] : categories)
+        if (cb.limit > 0.0)
+            f << cb.category << "|" << std::fixed << std::setprecision(2) << cb.limit << "\n";
+}
+
+void Budget::loadLimits(const std::string& filename) {
+    std::ifstream f(filename);
+    if (!f.is_open()) return;
+    std::string m;
+    if (!std::getline(f, m) || m != month) return;  // Sai tháng → bỏ qua
+    std::string line;
+    while (std::getline(f, line)) {
+        size_t sep = line.find('|');
+        if (sep == std::string::npos || sep == 0) continue;
+        std::string cat = line.substr(0, sep);
+        try {
+            double lim = std::stod(line.substr(sep + 1));
+            if (lim > 0.0) setLimit(cat, lim);
+        } catch (...) { continue; }
+    }
 }
 
 // --- operator<< ---
