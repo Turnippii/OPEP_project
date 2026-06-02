@@ -74,6 +74,20 @@ void Transaction::displayInfo() const {
     std::cout << "\n";
 }
 
+// --- Equality operators ---
+
+bool Transaction::operator==(const Transaction& other) const {
+    return id       == other.id
+        && amount   == other.amount
+        && type     == other.type
+        && category == other.category
+        && date     == other.date;
+}
+
+bool Transaction::operator!=(const Transaction& other) const {
+    return !(*this == other);
+}
+
 // --- Serialization operator<< / operator>> cho Database<Transaction> ---
 // Format: "<id> <date> <TYPE> <amount>\n<title>\n<category>\n<note>\n"
 

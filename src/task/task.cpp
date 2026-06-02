@@ -85,6 +85,20 @@ void Task::displayInfo() const {
     std::cout << "\n";
 }
 
+// --- Equality operators ---
+
+bool Task::operator==(const Task& other) const {
+    return id        == other.id
+        && title     == other.title
+        && deadline  == other.deadline
+        && priority  == other.priority
+        && completed == other.completed;
+}
+
+bool Task::operator!=(const Task& other) const {
+    return !(*this == other);
+}
+
 // --- Serialization operator<< / operator>> cho Database<Task> ---
 // Format: "<id> <date> <completed>\n<title>\n<priority>\n<deadline>\n"
 

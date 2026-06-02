@@ -51,6 +51,10 @@ public:
     // Override pure virtual từ Record
     void displayInfo() const override;
 
+    // So sánh đầy đủ: id, amount, type, category, date
+    bool operator==(const Transaction& other) const;
+    bool operator!=(const Transaction& other) const;
+
     // operator<< / operator>> cho serialization vào Database<Transaction>
     // Format: "<id> <date> <TYPE> <amount>\n<title>\n<category>\n<note>\n"
     friend std::ostream& operator<<(std::ostream& os, const Transaction& t);
