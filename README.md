@@ -46,9 +46,9 @@
 
 ### Lý do chọn đề tài
 
-Quản lý chi tiêu và công việc cá nhân là nhu cầu thực tế của mọi sinh viên và người đi làm. Thay vì dùng spreadsheet hay app di động, **OPEP** cung cấp một công cụ nhẹ, nhanh, chạy hoàn toàn trên terminal — không cần cài thư viện ngoài, không cần kết nối mạng.
+Quản lý chi tiêu và công việc cá nhân là nhu cầu thực tế của mọi sinh viên và người đi làm. Thay vì dùng spreadsheet hay app di động, đề tài cung cấp một công cụ nhẹ, nhanh, chạy hoàn toàn trên terminal — không cần cài thư viện ngoài, không cần kết nối mạng.
 
-Dự án được thiết kế để vừa **giải quyết bài toán thực tế**, vừa minh họa đầy đủ các khái niệm **Lập trình Hướng đối tượng C++** theo yêu cầu đồ án.
+Dự án được thiết kế để vừa **giải quyết bài toán thực tế**, vừa minh họa đầy đủ các khái niệm **Lập trình Hướng đối tượng** theo yêu cầu đồ án.
 
 ### Đối tượng người dùng
 
