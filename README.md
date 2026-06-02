@@ -1,4 +1,4 @@
-# 💰 OPEP — Personal Budget & Task Manager
+# 💰 OOP — Personal Budget & Task Manager
 
 <div align="center">
 
@@ -291,7 +291,7 @@ OPEP_project/
 │
 ├── 📂 tests/                       # Unit tests (WIP)
 └── 📂 build/                       # Output biên dịch — tạo bởi make
-    └── opep(.exe)
+    └── oop(.exe)
 ```
 
 ---
@@ -365,13 +365,13 @@ data (hồng)          ui (tím)              └── Budget
 
 ## 👥 Thành Viên Nhóm
 
-| STT | Họ và Tên | MSSV | Vai Trò | Đóng Góp Chính |
+| STT | Họ và Tên | MSSV |
 |:---:|---|---|---|---|
-| 1 | [Tên TV1] | [MSSV1] | 🏗️ Architect / Lead Dev | Thiết kế kiến trúc, code 5 module, tích hợp `main.cpp` |
-| 2 | [Tên TV2] | [MSSV2] | 🧪 Tester | Unit test, phát hiện và fix bug, kiểm thử đa nền tảng |
-| 3 | [Tên TV3] | [MSSV3] | 📐 Designer | Vẽ UML (class/sequence diagram), review kiến trúc |
-| 4 | [Tên TV4] | [MSSV4] | ✍️ Technical Writer | Báo cáo OOP, README, tài liệu kỹ thuật |
-| 5 | [Tên TV5] | [MSSV5] | 🎤 Presenter | Slide thuyết trình, video demo, chuẩn bị vấn đáp |
+| 1 | Vũ Quốc Bảo | 23139004 |
+| 2 | Nguyễn Hiếu Liêm | 23139024 | 
+| 3 | Lê Nhật Nam | 23139029 | 
+| 4 | Trần Ngọc Thiện | 23139045 | 
+| 5 | Nguyễn Duy Vương | 23139051 | 
 
 > 📝 **Hướng dẫn cập nhật:** Thay `[Tên TVx]` và `[MSSVx]` bằng thông tin thật của nhóm.
 
@@ -442,7 +442,7 @@ Tên hàm, biến           →  Tiếng Anh
 
 ## 📜 License
 
-Dự án này là **đồ án học thuật** thuộc môn **Lập trình Hướng đối tượng C++**.
+Dự án này là **đồ án học thuật** thuộc môn **Lập trình Hướng đối tượng và kỹ thuật phần mềm**.
 
 - ✅ Được phép tham khảo, học tập, và trích dẫn (kèm nguồn)
 - ❌ Không được dùng cho mục đích thương mại
@@ -464,7 +464,7 @@ Dự án này là **đồ án học thuật** thuộc môn **Lập trình Hướ
 
 <div align="center">
 
-Made with ❤️ by **Nhóm OPEP** · C++17 · GNU Make · PlantUML
+Made with ❤️ by **Nhóm_10_OOP** · C++17 · GNU Make · PlantUML
 
 *"Viết code sạch — không dùng raw pointer, không dùng magic number, không dùng thư viện ngoài."*
 
