@@ -361,20 +361,6 @@ data (hồng)          ui (tím)              └── Budget
 | **VCS** | Git + GitHub | Quản lý lịch sử, làm việc nhóm |
 | **Docs** | PlantUML + Markdown | Diagram dạng text, version-controllable |
 
----
-
-## 👥 Thanh Viên Nhóm
-
-| STT | Họ và Tên | MSSV |
-| :---: | :--- | :--- |
-| 1 | `Vũ Quốc Bảo` | `23139004` |
-| 2 | `Nguyễn Hiếu Liêm` | `23139024` |
-| 3 | `Lê Nhật Nam` | `23139029` |
-| 4 | `Trần Ngọc Thiện` | `23139045` |
-| 5 | `Nguyễn Duy Vương` | `23139051` |
-
----
-
 ## 🗺️ Roadmap
 
 Các tính năng có thể mở rộng trong tương lai:
