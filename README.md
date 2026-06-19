@@ -361,6 +361,18 @@ data (hồng)          ui (tím)              └── Budget
 | **VCS** | Git + GitHub | Quản lý lịch sử, làm việc nhóm |
 | **Docs** | PlantUML + Markdown | Diagram dạng text, version-controllable |
 
+## 👥 Thành Viên Nhóm
+
+| STT | Họ tên | MSSV | Vai trò | Đóng góp |
+|---|---|---|---|---|
+| 1 | [Tên TV1] | [MSSV] | Architect & Lead Dev | Thiết kế kiến trúc OOP, lập trình core modules (Record, Task, Transaction, Wallet) |
+| 2 | [Tên TV2] | [MSSV] | Documentation | Viết báo cáo OOP, vẽ class diagram & sequence diagram PlantUML, README |
+| 3 | [Tên TV3] | [MSSV] | Tester | Viết unit test, kiểm thử edge case, báo cáo và fix bug |
+| 4 | [Tên TV4] | [MSSV] | Designer | Thiết kế UI console, Dashboard ASCII, menu hệ thống |
+| 5 | [Tên TV5] | [MSSV] | Presenter | Chuẩn bị slide thuyết trình, demo sản phẩm, vấn đáp |
+
+---
+
 ## 🗺️ Roadmap
 
 Các tính năng có thể mở rộng trong tương lai:
@@ -438,11 +450,10 @@ Dự án này là **đồ án học thuật** thuộc môn **Lập trình Hướ
 
 | | |
 |---|---|
-| 📧 **Email nhóm** | `` |
+| 📧 **Email nhóm** | `nguyenhieuliam@gmail.com` |
 | 🐙 **GitHub** | `https://github.com/Turnippii/OPEP_project` |
 | 🏫 **Trường** | Đại học Công nghệ kỹ thuật TP HCM |
-| 📚 **Môn học** | Lập trình Hướng đối tượng và kỹ thuật phần mềm|
-|
+| 📚 **Môn học** | Lập trình Hướng đối tượng và kỹ thuật phần mềm |
 
 ---
 
