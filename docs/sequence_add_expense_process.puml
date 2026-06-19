@@ -26,64 +26,51 @@ participant "Budget"      as BDG
 participant "Wallet"      as W
 participant "Database\n<Transaction>" as DB
 
-note over M : Tiếp nối từ validate thành công
-
+|||
 == Cập nhật Budget ==
+|||
 
 M -> BDG : recordExpense(category, amount)
 activate BDG
-note right of BDG
-  spent += amount
-  Tăng dữ liệu thống kê
-end note
 BDG --> M : warn : bool
 deactivate BDG
 
+|||
 == Ghi giao dịch vào Wallet ==
+|||
 
-M -> W : addExpense(amount, category,\n          title, today, note)
+M -> W : addExpense(...)
 activate W
 
 note right of W
-  **ENCAPSULATION**
-  balance là PRIVATE
-  Chỉ thay đổi tại đây
-  sau khi validate đầy đủ
+  **ENCAPSULATION**: balance là PRIVATE,
+  chỉ thay đổi tại đây sau validate
 end note
 
-alt amount <= 0
-    W -> W : throw\nInvalidInputException
-    W --> M : <<throws>>
+alt hợp lệ
+
+    W -> W : tạo Transaction, balance -= amount
+    W --> M : shared_ptr<Transaction>
+
+else không hợp lệ (amount<=0 / vượt balance)
+
+    W --> M : <<throws>>\nInvalidInputException / InsufficientBalanceException
     M --> U : in lỗi, return
 
-else amount > balance
-    W -> W : throw\nInsufficientBalanceException
-    W --> M : <<throws>>
-    M --> U : in lỗi, return
-
-else hợp lệ
-    W -> W : tạo Transaction\n(make_shared)
-    W -> W : push_back(txn)
-    W -> W : balance -= amount
 end
 
-W --> M : shared_ptr<Transaction>
 deactivate W
 
-== Lưu file mã hóa ==
+|||
+== Lưu file & thông báo ==
+|||
 
 M -> DB : save(wallet.getTransactions())
 activate DB
-note right of DB
-  encryptToFile()
-  → ghi binary
-end note
 DB --> M : (void)
 deactivate DB
 
-== Thông báo ==
-
-M --> U : "[OK] Da ghi chi tieu!"
+M --> U : "[OK] Đã ghi chi tiêu!"
 
 deactivate M
 

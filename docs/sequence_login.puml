@@ -26,17 +26,20 @@ participant "AuthManager"   as AM
 participant "Database\n<User>" as DB
 participant "Encryption"    as ENC
 
+|||
 == Nhập thông tin ==
+|||
 
 U  -> M : chọn [1] Đăng nhập
 activate M
 
-M  -> M : readString(username)
-M  -> M : readPassword(password)
+M  -> M : nhập username/password
 
+|||
 == Đọc danh sách user từ file ==
+|||
 
-M  -> AM : login(username, password)
+M  -> AM : login(...)
 activate AM
 
 AM -> DB : load()
@@ -50,7 +53,9 @@ deactivate ENC
 DB --> AM : vector<User>
 deactivate DB
 
-== Hash mật khẩu nhập vào ==
+|||
+== Hash & so khớp mật khẩu ==
+|||
 
 AM -> ENC : hashPassword(input)
 activate ENC
@@ -59,25 +64,28 @@ deactivate ENC
 
 AM -> AM : tìm user khớp\n(username + hash)
 
+|||
 == Phân nhánh kết quả ==
+|||
 
 alt thành công
 
     AM --> M : shared_ptr<User>
-    deactivate AM
-    M --> U  : chuyển sang khởi tạo session\n(xem sequence_login_session.puml)
+    M --> U  : chuyển sang khởi tạo session
 
 else thất bại
 
-    AM -> AM : throwFail()
     AM --> M : <<throws>>\nAuthenticationException
-    deactivate AM
-
-    M -> M : catch(OPEPException&)
+    M -> M : catch(...)
     M --> U : in lỗi, quay lại authMenu
 
 end
 
+deactivate AM
 deactivate M
+
+note over M, AM #LightBlue
+  Tiếp theo: xem sequence_login_session.puml
+end note
 
 @enduml

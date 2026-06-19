@@ -25,7 +25,9 @@ participant "Menu"           as M
 participant "InputValidator" as IV
 participant "Budget"         as BDG
 
+|||
 == Thu thập thông tin ==
+|||
 
 U  -> M : chọn [3] Thêm chi tiêu
 activate M
@@ -35,64 +37,45 @@ activate IV
 IV --> M : amount
 deactivate IV
 
-M -> M  : pickCategory(wallet)
-note right of M : Liệt kê danh mục đã có\n+ tuỳ chọn nhập mới
-
-M -> IV : readString("Mo ta")
+M -> IV : readDetails(category, title, note)
 activate IV
-IV --> M : title
+IV --> M : details
 deactivate IV
 
-M -> IV : readString("Ghi chu")
-activate IV
-IV --> M : note
-deactivate IV
-
+|||
 == Kiểm tra hạn mức ngân sách ==
+|||
 
 M -> BDG : getCategory(category)
 activate BDG
+BDG --> M : CategoryBudget cb
+deactivate BDG
 
-alt category CÓ hạn mức
+note right of M
+  Nếu category chưa có hạn mức
+  → bỏ qua kiểm tra, proceed = true
+end note
 
-    BDG --> M : CategoryBudget cb
-    M -> M   : ratio = (spent + amount) / limit
+alt ratio >= 0.8 (cảnh báo / vượt mức)
 
-    alt ratio >= 1.0
-        M --> U : "[!!] VƯỢT HẠN MỨC"
-        M -> IV : confirm()
-        activate IV
-        IV --> M : proceed
-        deactivate IV
+    M --> U : "[!] Cảnh báo hạn mức"
+    M -> IV : confirm()
+    activate IV
+    IV --> M : proceed
+    deactivate IV
 
-    else ratio >= 0.8
-        M --> U : "[!] CẢNH BÁO 80%+"
-        M -> IV : confirm()
-        activate IV
-        IV --> M : proceed
-        deactivate IV
+else ratio < 0.8
 
-    else ratio < 0.8
-        M -> M : proceed = true
-    end
-
-    opt proceed == false
-        M --> U : huỷ, quay lại menu
-        return
-    end
-
-else CHƯA có hạn mức
-
-    BDG --> M : <<throws>>\nInvalidInputException
-    M -> M : catch → bỏ qua
     M -> M : proceed = true
 
 end
-deactivate BDG
+
+opt proceed == false
+    M --> U : huỷ, quay lại menu
+end
 
 note over M, BDG #LightBlue
-  Validate xong → chuyển sang xử lý ghi giao dịch
-  (xem sequence_add_expense_process.puml)
+  Validate xong → xem sequence_add_expense_process.puml
 end note
 
 deactivate M
