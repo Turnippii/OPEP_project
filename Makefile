@@ -3,14 +3,17 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -Iinclude
 # GCC < 9 tren Linux can them: LDFLAGS := -lstdc++fs
 LDFLAGS  :=
 
-# Phat hien OS de dat ten file dich va lenh xoa
+# Phat hien OS de dat extension file dich (.exe tren Windows)
+# Yeu cau shell POSIX: Git Bash / MSYS2 tren Windows, hoac bash/sh tren Linux/macOS
 ifeq ($(OS),Windows_NT)
-    EXE   := .exe
-    RMDIR := rmdir /S /Q
+    EXE := .exe
 else
-    EXE   :=
-    RMDIR := rm -rf
+    EXE :=
 endif
+
+# rm -rf hoat dong tren Git Bash, MSYS2, Linux, macOS
+# (rmdir /S /Q chi dung duoc trong CMD — khong dung o day)
+RMDIR := rm -rf
 
 BUILD  := build
 TARGET := $(BUILD)/opep$(EXE)
