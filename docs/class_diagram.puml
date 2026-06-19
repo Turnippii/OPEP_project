@@ -1,405 +1,259 @@
 @startuml OPEP_Class_Diagram
 
-' ═══════════════════════════════════════════════════════════
-' OPEP — Personal Budget & Task Manager
-' Class Diagram đầy đủ | C++17 / STL | namespace opep
-' ═══════════════════════════════════════════════════════════
-
-skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 55
-skinparam ranksep 70
+skinparam nodesep 80
+skinparam ranksep 100
+skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
-skinparam defaultFontSize 11
+skinparam defaultFontSize 12
 skinparam classBorderThickness 1.5
-skinparam arrowThickness 1.2
+skinparam arrowThickness 1.3
+skinparam shadowing false
 
 skinparam class {
     BackgroundColor White
-    BorderColor #555555
-    FontColor #111111
-}
-skinparam package {
-    BorderColor #888888
-    FontStyle bold
+    BorderColor #444444
+    FontColor #000000
 }
 
-title <b>OPEP — Personal Budget & Task Manager</b>\nClass Diagram  (C++17 / STL)
+title <b>OPEP — Class Diagram</b>\n<size:10>C++17 / STL / namespace opep</size>
 
-' ╔═══════════════════════════════════════════════════════╗
-' ║  PACKAGE: core                                        ║
-' ║  Lớp cơ sở trừu tượng + toàn bộ exception hierarchy  ║
-' ╚═══════════════════════════════════════════════════════╝
+' ═══════════ HÀNG 1: CORE (trên cùng) ═══════════
 package "core" #D6EAF8 {
-
     abstract class Record {
-        ' Lớp abstract gốc — không thể khởi tạo trực tiếp
-        # id    : int
-        # date  : string
+        # id : int
+        # date : string
         # title : string
         --
-        # Record()
-        + Record(id : int, date : string, title : string)
-        + {abstract} displayInfo() : void
-        + getId()    : int
-        + getDate()  : string
+        + {abstract} displayInfo()
+        + getId() : int
+        + getDate() : string
         + getTitle() : string
-        + setDate(d  : string) : void
-        + setTitle(t : string) : void
-        + operator==(other : Record) : bool
-        + operator<<(os : ostream, r : Record) : ostream&
+        + operator== ()
+        + operator<< ()
     }
 
     class OPEPException {
-        ' Base của toàn bộ exception trong ứng dụng
         # message : string
         --
-        + OPEPException(msg : string)
         + what() : const char*
-    }
-
-    class InvalidInputException {
-        ' Input sai định dạng, ngoài khoảng, hoặc rỗng
-        --
-        + InvalidInputException(msg : string)
-    }
-    class FileNotFoundException {
-        ' Không tìm thấy file cần đọc / ghi
-        --
-        + FileNotFoundException(filename : string)
-    }
-    class AuthenticationException {
-        ' Sai mật khẩu hoặc tài khoản không tồn tại
-        --
-        + AuthenticationException(msg : string)
-    }
-    class InsufficientBalanceException {
-        ' Chi vượt số dư hiện có trong Wallet
-        --
-        + InsufficientBalanceException(required : double, available : double)
-    }
-    class BudgetExceededException {
-        ' Chi vượt hạn mức ngân sách danh mục
-        --
-        + BudgetExceededException(category : string, limit : double, spent : double)
     }
 }
 
-' ╔═══════════════════════════════════════════════════════╗
-' ║  PACKAGE: task                                        ║
-' ║  Quản lý công việc (Task)                             ║
-' ╚═══════════════════════════════════════════════════════╝
-package "task" #D5F5E3 {
+' ═══════════ HÀNG 2: 5 EXCEPTION ═══════════
+package "exceptions" #D6EAF8 {
+    class InvalidInputException
+    class FileNotFoundException
+    class AuthenticationException
+    class InsufficientBalanceException
+    class BudgetExceededException
+}
 
+' ═══════════ HÀNG 3: TASK & MONEY (song song) ═══════════
+package "task" #D5F5E3 {
     enum Priority {
-        LOW    = 0
-        MEDIUM = 1
-        HIGH   = 2
+        LOW
+        MEDIUM
+        HIGH
     }
 
     class Task {
-        ' Lớp con cụ thể của Record — một công việc cần làm
         - completed : bool
-        - priority  : Priority
-        - deadline  : string
+        - priority : Priority
+        - deadline : string
         --
-        + Task()
-        + Task(id : int, date : string, title : string,\n      priority : Priority, deadline : string)
-        + isCompleted() : bool
-        + getPriority() : Priority
-        + getDeadline() : string
-        + setCompleted(v : bool)    : void
-        + setPriority(p : Priority) : void
-        + setDeadline(d : string)   : void
-        + displayInfo() : void
-        + operator==(other : Task) : bool
-        + operator!=(other : Task) : bool
-        + operator<<(os : ostream, t : Task) : ostream&
-        + operator>>(is : istream, t : Task) : istream&
+        + displayInfo()
+        + setCompleted()
+        + setPriority()
+        + operator== ()
+        + operator<< ()
+        + operator>> ()
     }
 
     class TaskManager {
-        ' Quản lý tập hợp Task qua unique_ptr — sở hữu độc quyền
         - tasks : vector<unique_ptr<Task>>
         --
-        + TaskManager()
-        + addTask(task : unique_ptr<Task>) : void
-        + removeTask(id : int) : void
-        + markDone(id : int)   : void
-        + sortByPriority()     : void
-        + getById(id : int)    : const Task*
-        + getAll()             : const vector<unique_ptr<Task>>&
-        + count()              : size_t
-        + countCompleted()     : size_t
-        + displayAll()         : void
+        + addTask()
+        + removeTask()
+        + markDone()
+        + sortByPriority()
+        + getById() : const Task*
+        + count() : size_t
     }
 }
 
-' ╔═══════════════════════════════════════════════════════╗
-' ║  PACKAGE: money                                       ║
-' ║  Giao dịch tài chính, ví tiền, ngân sách             ║
-' ╚═══════════════════════════════════════════════════════╝
 package "money" #FEF9E7 {
-
     enum TransactionType {
-        INCOME  = 0
-        EXPENSE = 1
+        INCOME
+        EXPENSE
     }
 
     class Transaction {
-        ' Lớp con cụ thể của Record — một giao dịch thu/chi
-        - amount   : double
-        - type     : TransactionType
+        - amount : double
+        - type : TransactionType
         - category : string
-        - note     : string
+        - note : string
         --
-        + Transaction()
-        + Transaction(id : int, date : string, title : string,\n             amount : double, type : TransactionType,\n             category : string, note : string)
-        + getAmount()   : double
-        + getType()     : TransactionType
-        + getCategory() : string
-        + getNote()     : string
-        + setAmount(a   : double) : void
-        + setCategory(c : string) : void
-        + setNote(n     : string) : void
-        + displayInfo() : void
-        + operator==(other : Transaction) : bool
-        + operator!=(other : Transaction) : bool
-        + operator<<(os : ostream, t : Transaction) : ostream&
-        + operator>>(is : istream, t : Transaction) : istream&
+        + displayInfo()
+        + getAmount() : double
+        + getType()
+        + operator== ()
+        + operator<< ()
+        + operator>> ()
     }
 
     class Wallet {
-        ' Quản lý số dư và danh sách giao dịch
-        ' balance là PRIVATE — chỉ thay đổi qua addIncome/addExpense
-        - balance       : double
-        - transactions  : vector<shared_ptr<Transaction>>
-        - nextId        : int
-        - ownerUsername : string
+        - balance : double
+        - transactions : vector<shared_ptr<Transaction>>
+        - nextId : int
         --
-        + Wallet(ownerUsername : string, initialBalance : double)
-        + getBalance()         : double
-        + getOwnerUsername()   : string
-        + getTransactions()    : const vector<shared_ptr<Transaction>>&
-        + addIncome(amount : double, category : string,\n          title : string, date : string, note : string)\n          : shared_ptr<Transaction>
-        + addExpense(amount : double, category : string,\n           title : string, date : string, note : string)\n           : shared_ptr<Transaction>
-        + loadTransaction(t : Transaction) : void
-        + totalIncome()    : double
-        + totalExpense()   : double
-        + displaySummary() : void
-        + operator<<(os : ostream, w : Wallet) : ostream&
+        + addIncome() : shared_ptr<Transaction>
+        + addExpense() : shared_ptr<Transaction>
+        + loadTransaction()
+        + getBalance() : double
+        + totalIncome() : double
+        + totalExpense() : double
     }
 
     class CategoryBudget <<struct>> {
-        ' Hạn mức và chi tiêu thực tế của một danh mục
         + category : string
-        + limit    : double
-        + spent    : double
+        + limit : double
+        + spent : double
         --
-        + CategoryBudget(cat : string, lim : double)
         + usageRatio() : double
-        + remaining()  : double
         + isExceeded() : bool
         + isNearLimit() : bool
     }
 
     class Budget {
-        ' Quản lý hạn mức ngân sách theo danh mục trong một tháng
-        - month      : string
+        - month : string
         - categories : map<string, CategoryBudget>
         --
-        + Budget(month : string)
-        + setLimit(category : string, limit : double)     : void
-        + recordExpense(category : string, amount : double) : bool
-        + syncFromTransactions(\n    txns : vector<shared_ptr<Transaction>>) : void
-        + getCategory(category : string) : const CategoryBudget&
-        + totalLimit()  : double
-        + totalSpent()  : double
-        + getMonth()    : string
-        + displayBudget() : void
-        + saveLimits(filename : string) : void
-        + loadLimits(filename : string) : void
-        + operator<<(os : ostream, b : Budget) : ostream&
+        + setLimit()
+        + recordExpense()
+        + syncFromTransactions()
+        + getCategory()
+        + saveLimits()
+        + loadLimits()
     }
 }
 
-' ╔═══════════════════════════════════════════════════════╗
-' ║  PACKAGE: data                                        ║
-' ║  Người dùng, xác thực, lưu trữ, mã hóa              ║
-' ╚═══════════════════════════════════════════════════════╝
+' ═══════════ HÀNG 4: DATA ═══════════
 package "data" #FDEDEC {
-
     class User {
-        ' Tài khoản người dùng — password được hash một chiều
-        - username     : string
+        - username : string
         - passwordHash : string
-        - createdDate  : string
+        - createdDate : string
         --
-        + User()
-        + User(username : string, passwordHash : string, createdDate : string)
-        + getUsername()     : string
-        + getPasswordHash() : string
-        + getCreatedDate()  : string
-        + setPasswordHash(hash : string) : void
-        + operator==(other : User) : bool
-        + operator<<(os : ostream, u : User) : ostream&
-        + operator>>(is : istream, u : User) : istream&
+        + getUsername()
+        + getPasswordHash()
+        + setPasswordHash()
+        + operator== ()
     }
 
-    class "Database<T>" as DatabaseT <<template>> {
-        ' Template class lưu/nạp vector<T> ra file có mã hóa XOR
-        ' Yêu cầu T: default ctor + operator<< + operator>>
-        - filename  : string
+    class "Database<T>" as DB <<template>> {
+        - filename : string
         - encrypted : bool
-        - encKey    : string
+        - encKey : string
         --
-        + Database(filename : string, encrypted : bool, key : string)
-        + exists()                      : bool
-        + getFilename()                 : string
-        + save(records : vector<T>)     : void
-        + load()                        : vector<T>
-        + append(record : T)            : void
-        + clear()                       : void
+        + save(records)
+        + load() : vector<T>
+        + append(record)
+        + exists() : bool
     }
 
     class AuthManager {
-        ' Đăng ký, đăng nhập, đổi mật khẩu — dùng Database<User> nội bộ
-        - dataDir : string
-        - userDb  : Database<User>
+        - userDb : Database<User>
         --
-        + AuthManager(dataDir : string)
-        + registerUser(username : string, password : string) : shared_ptr<User>
-        + login(username : string, password : string)        : shared_ptr<User>
-        + changePassword(username : string,\n               oldPassword : string,\n               newPassword : string) : void
-        + userExists(username : string)                      : bool
+        + registerUser() : shared_ptr<User>
+        + login() : shared_ptr<User>
+        + changePassword()
+        + userExists() : bool
     }
 
     class Encryption <<utility>> {
-        ' Tập hợp hàm tiện ích mã hóa — không có state, dùng như static
-        --
-        + {static} xorCipher(data : string, key : string)      : string
-        + {static} hexEncode(data : string)                     : string
-        + {static} hexDecode(hex : string)                      : string
-        + {static} hashPassword(password : string)              : string
-        + {static} encryptToFile(data : string, key : string)   : string
-        + {static} decryptFromFile(encoded : string, key : string) : string
+        + {static} xorCipher()
+        + {static} hexEncode()
+        + {static} hexDecode()
+        + {static} hashPassword()
+        + {static} encryptToFile()
+        + {static} decryptFromFile()
     }
 }
 
-' ╔═══════════════════════════════════════════════════════╗
-' ║  PACKAGE: ui                                          ║
-' ║  Menu console, Dashboard ASCII, validate input        ║
-' ╚═══════════════════════════════════════════════════════╝
+' ═══════════ HÀNG 5: UI ═══════════
 package "ui" #F4ECF7 {
-
-    class MenuItem <<struct>> {
-        ' Một mục menu: nhãn + hành động lambda
-        + label       : string
-        + action      : function<void()>
-        + isSeparator : bool
-    }
-
     class Menu {
-        ' Menu console nhiều cấp — exception từ action được bắt tự động
-        - title     : string
-        - items     : vector<MenuItem>
-        - running   : bool
-        - backLabel : string
+        - title : string
+        - items : vector<MenuItem>
         --
-        + Menu(title : string, backLabel : string)
-        + addItem(label : string, action : function<void()>) : void
-        + addSeparator() : void
-        + run()  : void
-        + stop() : void
+        + addItem()
+        + addSeparator()
+        + run()
+        + stop()
     }
 
     class Dashboard {
-        ' Hiển thị tổng quan ASCII: số dư, thu/chi tháng, task sắp đến hạn
-        - wallet      : const Wallet&
-        - taskManager : const TaskManager&
-        - username    : string
-        - today       : string
+        - wallet : Wallet&
+        - taskManager : TaskManager&
         --
-        + Dashboard(wallet : Wallet, taskManager : TaskManager, username : string)
-        + render() : void
-        - getUpcomingTasks(days : int) : vector<const Task*>
-        - getTodayExpense()  : double
-        - getMonthIncome()   : double
-        - getMonthExpense()  : double
+        + render()
     }
 
     class InputValidator <<utility>> {
-        ' Validate và đọc input — re-prompt khi sai, throw khi stream lỗi
-        --
-        + {static} readInt(prompt : string, min : int, max : int)                    : int
-        + {static} readDouble(prompt : string, min : double, max : double)           : double
-        + {static} readString(prompt : string, minLen : int, maxLen : int)           : string
-        + {static} readDate(prompt : string, allowEmpty : bool)                      : string
-        + {static} readPassword(prompt : string, minLen : int)                       : string
-        + {static} confirm(prompt : string)                                          : bool
-        + {static} pause(msg : string)                                               : void
+        + {static} readInt()
+        + {static} readDouble()
+        + {static} readString()
+        + {static} readDate()
+        + {static} readPassword()
+        + {static} confirm()
     }
 }
 
 ' ═══════════════════════════════════════════════════════════
-' QUAN HỆ
-' Đặt sau tất cả package để PlantUML layout chính xác
+' QUAN HỆ - Đặt sau cùng, đi theo HÀNG → CỘT vuông góc
 ' ═══════════════════════════════════════════════════════════
 
-' ── Inheritance: Exception hierarchy ──────────────────────
-' 5 lớp exception cụ thể kế thừa OPEPException
-' OPEPException kế thừa std::exception (ngoài scope dự án)
-InvalidInputException        --|> OPEPException
-FileNotFoundException        --|> OPEPException
-AuthenticationException      --|> OPEPException
-InsufficientBalanceException --|> OPEPException
-BudgetExceededException      --|> OPEPException
+' ── Exception hierarchy (HÀNG 2 → HÀNG 1) ──
+InvalidInputException        -up-|> OPEPException
+FileNotFoundException        -up-|> OPEPException
+AuthenticationException      -up-|> OPEPException
+InsufficientBalanceException -up-|> OPEPException
+BudgetExceededException      -up-|> OPEPException
 
-' ── Inheritance: Record hierarchy ─────────────────────────
-' Kế thừa public — quan hệ IS-A
-' Task::displayInfo() và Transaction::displayInfo() ghi đè pure virtual
-Task        --|> Record
-Transaction --|> Record
+' ── Record hierarchy (HÀNG 3 → HÀNG 1) ──
+Task        -up-|> Record
+Transaction -up-|> Record
 
-' ── Dependency: enum ──────────────────────────────────────
-Task        ..> Priority        : uses
-Transaction ..> TransactionType : uses
+' ── Task uses Priority (cùng package, đi thẳng) ──
+Task -[hidden]right- Priority
 
-' ── Composition: TaskManager owns Task (unique_ptr) ───────
-' Khi TaskManager bị destroy → tất cả Task bị delete tự động
-' Copy bị xóa (= delete) vì unique_ptr không copyable
-TaskManager "1" *-- "0..*" Task : owns (unique_ptr) >
+' ── Transaction uses TransactionType (cùng package, đi thẳng) ──
+Transaction -[hidden]right- TransactionType
 
-' ── Composition: Wallet owns Transaction (shared_ptr) ─────
-' Wallet tạo Transaction qua addIncome / addExpense
-' shared_ptr cho phép caller cũng giữ reference tạm thời
-Wallet "1" *-- "0..*" Transaction : owns (shared_ptr) >
+' ── Composition trong cùng package (đi thẳng) ──
+TaskManager *-down- Task : "1..*\nowns\n<unique_ptr>"
+Wallet      *-down- Transaction : "1..*\nowns\n<shared_ptr>"
+Budget      *-down- CategoryBudget : "1..*\ncontains"
 
-' ── Composition: Budget chứa CategoryBudget trong map ─────
-Budget "1" *-- "0..*" CategoryBudget : contains >
+' ── AuthManager dùng Database<User> ──
+AuthManager *-right- DB : "userDb"
 
-' ── Dependency: Budget cần Transaction để sync spending ───
-Budget ..> Transaction : <<use>>\nsyncFromTransactions()
+' ── Database dùng Encryption ──
+DB ..right..> Encryption : "encrypt /\ndecrypt"
 
-' ── Composition: AuthManager chứa Database<User> ──────────
-' Database<User> là member trực tiếp (không phải pointer)
-AuthManager "1" *-- "1" DatabaseT : userDb\n(Database<User>) >
+' ── Database<T> được instantiate cho 3 type (đi UP, thẳng đứng) ──
+DB ..up..> User        : "<bind\nT=User>"
+DB ..up..> Task        : "<bind\nT=Task>"
+DB ..up..> Transaction : "<bind\nT=Transaction>"
 
-' ── Dependency: Database<T> dùng Encryption ───────────────
-DatabaseT ..> Encryption : <<use>>\nencrypt / decrypt
+' ── Dashboard quan sát Wallet và TaskManager (đi UP) ──
+Dashboard o-up- Wallet      : "observes\n<const&>"
+Dashboard o-up- TaskManager : "observes\n<const&>"
 
-' ── Instantiation: Database<T> được dùng với 3 kiểu ───────
-DatabaseT ..> User        : <<bind T=User>>
-DatabaseT ..> Task        : <<bind T=Task>>
-DatabaseT ..> Transaction : <<bind T=Transaction>>
-
-' ── Composition: Menu chứa danh sách MenuItem ─────────────
-Menu "1" *-- "0..*" MenuItem : contains >
-
-' ── Aggregation: Dashboard tham chiếu (không sở hữu) ──────
-' Dashboard nhận Wallet& và TaskManager& qua constructor
-' Lifetime của Wallet/TaskManager do runSession() quản lý
-Dashboard "1" o-- "1" Wallet      : observes (const&) >
-Dashboard "1" o-- "1" TaskManager : observes (const&) >
+' ── Layout hints (hidden để force vị trí) ──
+Record -[hidden]right- OPEPException
+Task -[hidden]right- Transaction
+TaskManager -[hidden]right- Wallet
 
 @enduml

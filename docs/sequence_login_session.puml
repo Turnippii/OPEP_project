@@ -1,0 +1,89 @@
+@startuml sequence_login_session
+
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam lifelineBorderColor #444444
+skinparam sequenceParticipantBorderThickness 1.5
+skinparam shadowing false
+skinparam roundCorner 8
+
+skinparam sequence {
+    LifeLineBackgroundColor #FAFAFA
+    ParticipantBackgroundColor #E8F5E9
+    ParticipantBorderColor #2E7D32
+    ActorBackgroundColor #FFF3E0
+    ActorBorderColor #E65100
+}
+
+autonumber "<b>[00]</b>"
+
+title <b>Luồng Đăng Nhập (Phần 2/2) — Khởi Tạo Phiên</b>\n<size:11>runSession() → load data → render Dashboard</size>
+
+actor       "User"             as U
+participant "Menu"             as M
+participant "Wallet"           as W
+participant "TaskManager"      as TM
+participant "Budget"           as BDG
+participant "Database<T>"      as DB
+participant "Dashboard"        as DASH
+
+== Tạo các đối tượng phiên ==
+
+note over M : Tiếp nối từ login() thành công
+
+M -> W   : new Wallet(username, 0.0)
+activate W
+M -> TM  : new TaskManager()
+activate TM
+M -> BDG : new Budget(currentMonth())
+activate BDG
+
+== Nạp giao dịch từ file ==
+
+M -> DB  : load() transactions.db
+activate DB
+DB --> M : vector<Transaction>
+deactivate DB
+
+loop mỗi Transaction t
+    M -> W : loadTransaction(t)
+end
+
+== Nạp công việc từ file ==
+
+M -> DB  : load() tasks.db
+activate DB
+DB --> M : vector<Task>
+deactivate DB
+
+loop mỗi Task t
+    M -> TM : addTask(make_unique(t))
+end
+
+== Đồng bộ ngân sách ==
+
+M -> BDG : loadLimits(budget.cfg)
+M -> BDG : syncFromTransactions()
+
+note right of BDG
+  Reset spent = 0
+  Cộng dồn từng EXPENSE
+  trong tháng hiện tại
+end note
+
+== Hiển thị Dashboard ==
+
+M -> DASH : new Dashboard(w, tm, username)
+activate DASH
+M -> DASH : render()
+DASH --> U : Dashboard ASCII
+deactivate DASH
+
+M --> U : vào mainMenu.run()
+
+deactivate W
+deactivate TM
+deactivate BDG
+
+@enduml

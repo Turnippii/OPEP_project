@@ -1,0 +1,90 @@
+@startuml sequence_add_expense_process
+
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 1.5
+skinparam lifelineBorderColor #444444
+skinparam sequenceParticipantBorderThickness 1.5
+skinparam shadowing false
+skinparam roundCorner 8
+
+skinparam sequence {
+    LifeLineBackgroundColor #FAFAFA
+    ParticipantBackgroundColor #FFEBEE
+    ParticipantBorderColor #C62828
+    ActorBackgroundColor #FFF3E0
+    ActorBorderColor #E65100
+}
+
+autonumber "<b>[00]</b>"
+
+title <b>Luồng Thêm Chi Tiêu (Phần 2/2) — Xử Lý</b>\n<size:11>Cập nhật Budget + Ghi Wallet + Lưu file</size>
+
+actor       "User"        as U
+participant "Menu"        as M
+participant "Budget"      as BDG
+participant "Wallet"      as W
+participant "Database\n<Transaction>" as DB
+
+note over M : Tiếp nối từ validate thành công
+
+== Cập nhật Budget ==
+
+M -> BDG : recordExpense(category, amount)
+activate BDG
+note right of BDG
+  spent += amount
+  Tăng dữ liệu thống kê
+end note
+BDG --> M : warn : bool
+deactivate BDG
+
+== Ghi giao dịch vào Wallet ==
+
+M -> W : addExpense(amount, category,\n          title, today, note)
+activate W
+
+note right of W
+  **ENCAPSULATION**
+  balance là PRIVATE
+  Chỉ thay đổi tại đây
+  sau khi validate đầy đủ
+end note
+
+alt amount <= 0
+    W -> W : throw\nInvalidInputException
+    W --> M : <<throws>>
+    M --> U : in lỗi, return
+
+else amount > balance
+    W -> W : throw\nInsufficientBalanceException
+    W --> M : <<throws>>
+    M --> U : in lỗi, return
+
+else hợp lệ
+    W -> W : tạo Transaction\n(make_shared)
+    W -> W : push_back(txn)
+    W -> W : balance -= amount
+end
+
+W --> M : shared_ptr<Transaction>
+deactivate W
+
+== Lưu file mã hóa ==
+
+M -> DB : save(wallet.getTransactions())
+activate DB
+note right of DB
+  encryptToFile()
+  → ghi binary
+end note
+DB --> M : (void)
+deactivate DB
+
+== Thông báo ==
+
+M --> U : "[OK] Da ghi chi tieu!"
+
+deactivate M
+
+@enduml
