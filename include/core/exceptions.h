@@ -25,38 +25,38 @@ public:
 class InvalidInputException : public OPEPException {
 public:
     explicit InvalidInputException(const std::string& msg)
-        : OPEPException("Input khong hop le: " + msg) {}
+        : OPEPException("Input không hợp lệ: " + msg) {}
 };
 
 // Ném khi không tìm thấy file dữ liệu cần đọc/ghi
 class FileNotFoundException : public OPEPException {
 public:
     explicit FileNotFoundException(const std::string& filename)
-        : OPEPException("Khong tim thay file: " + filename) {}
+        : OPEPException("Không tìm thấy file: " + filename) {}
 };
 
 // Ném khi thông tin đăng nhập sai (sai mật khẩu, tài khoản không tồn tại...)
 class AuthenticationException : public OPEPException {
 public:
     explicit AuthenticationException(const std::string& msg)
-        : OPEPException("Xac thuc that bai: " + msg) {}
+        : OPEPException("Xác thực thất bại: " + msg) {}
 };
 
 // Ném khi thực hiện giao dịch vượt quá số dư hiện có
 class InsufficientBalanceException : public OPEPException {
 public:
     explicit InsufficientBalanceException(double required, double available)
-        : OPEPException("So du khong du: can " + std::to_string(required)
-                        + ", hien co " + std::to_string(available)) {}
+        : OPEPException("Số dư không đủ: cần " + std::to_string(required)
+                        + ", hiện có " + std::to_string(available)) {}
 };
 
 // Ném khi chi tiêu vượt hạn mức ngân sách của một danh mục
 class BudgetExceededException : public OPEPException {
 public:
     BudgetExceededException(const std::string& category, double limit, double spent)
-        : OPEPException("Vuot han muc ngan sach [" + category + "]: "
-                        + "han muc " + std::to_string(limit)
-                        + ", da chi " + std::to_string(spent)) {}
+        : OPEPException("Vượt hạn mức ngân sách [" + category + "]: "
+                        + "hạn mức " + std::to_string(limit)
+                        + ", đã chi " + std::to_string(spent)) {}
 };
 
 } // namespace opep

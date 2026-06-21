@@ -15,9 +15,25 @@
 #include <vector>
 #include <algorithm>
 #include <ctime>
+#include <clocale>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace fs = std::filesystem;
 using namespace opep;
+
+static void setupConsoleUtf8() {
+    std::setlocale(LC_ALL, "");
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -67,7 +83,7 @@ static void loadData(const std::string& username,
             for (auto& t : txnDb.load())
                 wallet.loadTransaction(t);
         } catch (const std::exception& e) {
-            std::cout << "  [!] Canh bao load giao dich: " << e.what() << "\n";
+            std::cout << "  [!] Cảnh báo load giao dịch: " << e.what() << "\n";
         }
     }
 
@@ -79,7 +95,7 @@ static void loadData(const std::string& username,
                 tm.addTask(std::make_unique<Task>(t));
             }
         } catch (const std::exception& e) {
-            std::cout << "  [!] Canh bao load task: " << e.what() << "\n";
+            std::cout << "  [!] Cảnh báo load task: " << e.what() << "\n";
         }
     }
 }
@@ -92,23 +108,23 @@ static void buildTaskMenu(Menu&              taskMenu,
                           const std::string& username,
                           const Wallet&      wallet)
 {
-    taskMenu.addItem("Xem tat ca task", [&]() {
-        std::cout << "\n=== DANH SACH TASK ===\n";
+    taskMenu.addItem("Xem tất cả task", [&]() {
+        std::cout << "\n=== DANH SÁCH TASK ===\n";
         if (tm.count() == 0)
-            std::cout << "  (Chua co task nao)\n";
+            std::cout << "  (Chưa có task nào)\n";
         else
             tm.displayAll();
-        std::cout << "  Hoan thanh: " << tm.countCompleted()
+        std::cout << "  Hoàn thành: " << tm.countCompleted()
                   << "/" << tm.count() << "\n";
         InputValidator::pause();
     });
 
-    taskMenu.addItem("Them task moi", [&]() {
-        std::cout << "\n=== THEM TASK MOI ===\n";
-        std::string title    = InputValidator::readString("  Ten task: ");
+    taskMenu.addItem("Thêm task mới", [&]() {
+        std::cout << "\n=== THÊM TASK MỚI ===\n";
+        std::string title    = InputValidator::readString("  Tên task: ");
         std::string deadline = InputValidator::readDate(
-            "  Han chot YYYY-MM-DD (Enter bo qua): ", true);
-        std::cout << "  Uu tien  [1]LOW  [2]MEDIUM  [3]HIGH: ";
+            "  Hạn chót YYYY-MM-DD (Enter bỏ qua): ", true);
+        std::cout << "  Ưu tiên  [1]LOW  [2]MEDIUM  [3]HIGH: ";
         int p = InputValidator::readInt("", 1, 3);
         Priority pr = (p == 1) ? Priority::LOW
                     : (p == 3) ? Priority::HIGH
@@ -116,38 +132,38 @@ static void buildTaskMenu(Menu&              taskMenu,
 
         tm.addTask(std::make_unique<Task>(nextTaskId++, today(), title, pr, deadline));
         saveData(username, wallet, tm);
-        std::cout << "  [OK] Da them task!\n";
+        std::cout << "  [OK] Đã thêm task!\n";
         InputValidator::pause();
     });
 
-    taskMenu.addItem("Danh dau hoan thanh", [&]() {
-        std::cout << "\n=== DANH DAU HOAN THANH ===\n";
-        if (tm.count() == 0) { std::cout << "  Chua co task nao.\n"; InputValidator::pause(); return; }
+    taskMenu.addItem("Đánh dấu hoàn thành", [&]() {
+        std::cout << "\n=== ĐÁNH DẤU HOÀN THÀNH ===\n";
+        if (tm.count() == 0) { std::cout << "  Chưa có task nào.\n"; InputValidator::pause(); return; }
         tm.displayAll();
-        int id = InputValidator::readInt("  Nhap ID task: ", 1, 99999);
+        int id = InputValidator::readInt("  Nhập ID task: ", 1, 99999);
         tm.markDone(id);
         saveData(username, wallet, tm);
-        std::cout << "  [OK] Da danh dau hoan thanh!\n";
+        std::cout << "  [OK] Đã đánh dấu hoàn thành!\n";
         InputValidator::pause();
     });
 
-    taskMenu.addItem("Xoa task", [&]() {
-        std::cout << "\n=== XOA TASK ===\n";
-        if (tm.count() == 0) { std::cout << "  Chua co task nao.\n"; InputValidator::pause(); return; }
+    taskMenu.addItem("Xóa task", [&]() {
+        std::cout << "\n=== XÓA TASK ===\n";
+        if (tm.count() == 0) { std::cout << "  Chưa có task nào.\n"; InputValidator::pause(); return; }
         tm.displayAll();
-        int id = InputValidator::readInt("  Nhap ID task can xoa: ", 1, 99999);
-        if (InputValidator::confirm("  Chac chan muon xoa task nay?")) {
+        int id = InputValidator::readInt("  Nhập ID task cần xóa: ", 1, 99999);
+        if (InputValidator::confirm("  Chắc chắn muốn xóa task này?")) {
             tm.removeTask(id);
             saveData(username, wallet, tm);
-            std::cout << "  [OK] Da xoa task!\n";
+            std::cout << "  [OK] Đã xóa task!\n";
         }
         InputValidator::pause();
     });
 
-    taskMenu.addItem("Sap xep theo uu tien", [&]() {
+    taskMenu.addItem("Sắp xếp theo ưu tiên", [&]() {
         tm.sortByPriority();
         saveData(username, wallet, tm);
-        std::cout << "\n  [OK] Da sap xep: HIGH -> MEDIUM -> LOW\n";
+        std::cout << "\n  [OK] Đã sắp xếp: HIGH -> MEDIUM -> LOW\n";
         tm.displayAll();
         InputValidator::pause();
     });
@@ -167,20 +183,20 @@ static std::string pickCategory(const Wallet& wallet) {
     }
 
     if (cats.empty())
-        return InputValidator::readString("  Danh muc: ");
+        return InputValidator::readString("  Danh mục: ");
 
-    std::cout << "  Danh muc co san:\n";
+    std::cout << "  Danh mục có sẵn:\n";
     for (std::size_t i = 0; i < cats.size(); ++i)
         std::cout << "    [" << (i + 1) << "] " << cats[i] << "\n";
-    std::cout << "    [" << (cats.size() + 1) << "] Nhap danh muc moi\n";
+    std::cout << "    [" << (cats.size() + 1) << "] Nhập danh mục mới\n";
 
     int choice = InputValidator::readInt(
-        "  Chon (1-" + std::to_string(cats.size() + 1) + "): ",
+        "  Chọn (1-" + std::to_string(cats.size() + 1) + "): ",
         1, static_cast<int>(cats.size() + 1)
     );
 
     if (choice == static_cast<int>(cats.size() + 1))
-        return InputValidator::readString("  Ten danh muc moi: ");
+        return InputValidator::readString("  Tên danh mục mới: ");
     return cats[choice - 1];
 }
 
@@ -192,11 +208,11 @@ static void buildMoneyMenu(Menu&              moneyMenu,
                             const std::string& username,
                             const TaskManager& tm)
 {
-    moneyMenu.addItem("Xem giao dich", [&]() {
-        std::cout << "\n=== DANH SACH GIAO DICH ===\n";
+    moneyMenu.addItem("Xem giao dịch", [&]() {
+        std::cout << "\n=== DANH SÁCH GIAO DỊCH ===\n";
         const auto& txns = wallet.getTransactions();
         if (txns.empty())
-            std::cout << "  (Chua co giao dich nao)\n";
+            std::cout << "  (Chưa có giao dịch nào)\n";
         else
             for (const auto& t : txns) t->displayInfo();
         std::cout << "\n";
@@ -204,27 +220,27 @@ static void buildMoneyMenu(Menu&              moneyMenu,
         InputValidator::pause();
     });
 
-    moneyMenu.addItem("Them thu nhap", [&]() {
-        std::cout << "\n=== THEM THU NHAP ===\n";
-        double      amt   = InputValidator::readDouble("  So tien (VND): ", 1.0);
-        std::string cat   = InputValidator::readString("  Danh muc (Luong/Thuong/Khac): ");
-        std::string title = InputValidator::readString("  Mo ta: ");
-        std::string note  = InputValidator::readString("  Ghi chu (Enter bo qua): ", 0);
+    moneyMenu.addItem("Thêm thu nhập", [&]() {
+        std::cout << "\n=== THÊM THU NHẬP ===\n";
+        double      amt   = InputValidator::readDouble("  Số tiền (VND): ", 1.0);
+        std::string cat   = InputValidator::readString("  Danh mục (Lương/Thưởng/Khác): ");
+        std::string title = InputValidator::readString("  Mô tả: ");
+        std::string note  = InputValidator::readString("  Ghi chú (Enter bỏ qua): ", 0);
 
         wallet.addIncome(amt, cat, title, today(), note);
         saveData(username, wallet, tm);
-        std::cout << "  [OK] Da ghi thu nhap!\n";
+        std::cout << "  [OK] Đã ghi thu nhập!\n";
         InputValidator::pause();
     });
 
-    moneyMenu.addItem("Them chi tieu", [&]() {
-        std::cout << "\n=== THEM CHI TIEU ===\n";
-        double      amt   = InputValidator::readDouble("  So tien (VND): ", 1.0);
+    moneyMenu.addItem("Thêm chi tiêu", [&]() {
+        std::cout << "\n=== THÊM CHI TIÊU ===\n";
+        double      amt   = InputValidator::readDouble("  Số tiền (VND): ", 1.0);
         std::string cat   = pickCategory(wallet);
-        std::string title = InputValidator::readString("  Mo ta: ");
-        std::string note  = InputValidator::readString("  Ghi chu (Enter bo qua): ", 0);
+        std::string title = InputValidator::readString("  Mô tả: ");
+        std::string note  = InputValidator::readString("  Ghi chú (Enter bỏ qua): ", 0);
 
-        // Canh bao budget truoc khi ghi; hoi y/n neu >= 80% han muc
+        // Cảnh báo ngân sách trước khi ghi; hỏi y/n nếu >= 80% hạn mức
         bool proceed = true;
         try {
             const auto& cb = budget.getCategory(cat);
@@ -234,51 +250,74 @@ static void buildMoneyMenu(Menu&              moneyMenu,
                 if (ratio >= 1.0) {
                     long long over = static_cast<long long>(projected - cb.limit);
                     long long lim  = static_cast<long long>(cb.limit);
-                    std::cout << "  [!!] VUOT HAN MUC: Han muc '" << cat
-                              << "' la " << lim << " VND, ban dang chi vuot "
+                    std::cout << "  [!!] VƯỢT HẠN MỨC: Hạn mức '" << cat
+                              << "' là " << lim << " VND, bạn đang chi vượt "
                               << over << " VND\n";
-                    proceed = InputValidator::confirm("  Van muon ghi?");
+                    proceed = InputValidator::confirm("  Vẫn muốn ghi?");
                 } else if (ratio >= WARNING_THRESHOLD) {
                     int pct       = static_cast<int>(ratio * 100);
                     long long proj = static_cast<long long>(projected);
                     long long lim  = static_cast<long long>(cb.limit);
-                    std::cout << "  [!] CANH BAO: Chi tieu nay se dat " << pct
-                              << "% han muc '" << cat << "' ("
+                    std::cout << "  [!] CẢNH BÁO: Chi tiêu này sẽ đạt " << pct
+                              << "% hạn mức '" << cat << "' ("
                               << proj << "/" << lim << " VND)\n";
-                    proceed = InputValidator::confirm("  Van muon ghi?");
+                    proceed = InputValidator::confirm("  Vẫn muốn ghi?");
                 }
             }
-        } catch (const InvalidInputException&) { /* chua co budget cho danh muc nay */ }
+        } catch (const InvalidInputException&) { /* chưa có ngân sách cho danh mục này */ }
 
         if (!proceed) { InputValidator::pause(); return; }
 
-        // Cap nhat budget (neu vuot han muc va user da xac nhan thi bo qua exception)
+        // Cập nhật ngân sách (nếu vượt hạn mức và người dùng đã xác nhận thì bỏ qua exception)
         try {
             budget.recordExpense(cat, amt);
-        } catch (const BudgetExceededException&) { /* user da xac nhan o tren */ }
+        } catch (const BudgetExceededException&) { /* người dùng đã xác nhận ở trên */ }
 
         wallet.addExpense(amt, cat, title, today(), note);
         saveData(username, wallet, tm);
-        std::cout << "  [OK] Da ghi chi tieu!\n";
+        std::cout << "  [OK] Đã ghi chi tiêu!\n";
         InputValidator::pause();
     });
 
     moneyMenu.addSeparator();
 
-    moneyMenu.addItem("Xem ngan sach thang nay", [&]() {
+    moneyMenu.addItem("Xem ngân sách tháng này", [&]() {
         budget.syncFromTransactions(wallet.getTransactions());
         std::cout << "\n";
         budget.displayBudget();
         InputValidator::pause();
     });
 
-    moneyMenu.addItem("Dat han muc danh muc", [&]() {
-        std::cout << "\n=== DAT HAN MUC NGAN SACH ===\n";
-        std::string cat = InputValidator::readString("  Ten danh muc: ");
-        double      lim = InputValidator::readDouble("  Han muc (VND/thang): ", 0.0);
+    moneyMenu.addItem("Đặt hạn mức danh mục", [&]() {
+        std::cout << "\n=== ĐẶT HẠN MỨC NGÂN SÁCH ===\n";
+        std::string cat = InputValidator::readString("  Tên danh mục: ");
+        double      lim = InputValidator::readDouble("  Hạn mức (VND/tháng): ", 0.0);
         budget.setLimit(cat, lim);
         budget.saveLimits(userDir(username) + "budget.cfg");
-        std::cout << "  [OK] Han muc " << cat << " = " << lim << " VND/thang\n";
+        std::cout << "  [OK] Hạn mức " << cat << " = " << lim << " VND/tháng\n";
+        InputValidator::pause();
+    });
+
+    moneyMenu.addItem("Xóa hạn mức danh mục", [&]() {
+        std::cout << "\n=== XÓA HẠN MỨC NGÂN SÁCH ===\n";
+        budget.syncFromTransactions(wallet.getTransactions());
+        budget.displayBudget();
+
+        std::string cat = InputValidator::readString("  Tên danh mục cần xóa hạn mức: ");
+        if (!InputValidator::confirm("  Chắc chắn muốn xóa hạn mức của danh mục này?")) {
+            InputValidator::pause();
+            return;
+        }
+
+        bool removed = budget.removeLimit(cat);
+        budget.syncFromTransactions(wallet.getTransactions());
+        budget.saveLimits(userDir(username) + "budget.cfg");
+
+        if (removed)
+            std::cout << "  [OK] Đã xóa hạn mức của danh mục '" << cat << "'.\n";
+        else
+            std::cout << "  [!] Danh mục '" << cat << "' hiện chưa có hạn mức để xóa.\n";
+
         InputValidator::pause();
     });
 }
@@ -289,10 +328,10 @@ static void buildMoneyMenu(Menu&              moneyMenu,
 
 static void demoPolymorphism(const TaskManager& taskMgr, const Wallet& wallet) {
     std::cout << "\n";
-    std::cout << "===== DEMO DA HINH DONG (Dynamic Polymorphism) =====\n";
-    std::cout << "  Cung 1 dong code  r->displayInfo()  nhung output khac nhau\n";
-    std::cout << "  tuy doi tuong that la Task hay Transaction.\n";
-    std::cout << "  Day la da hinh dong qua vtable (virtual dispatch).\n";
+    std::cout << "===== DEMO ĐA HÌNH ĐỘNG (Dynamic Polymorphism) =====\n";
+    std::cout << "  Cùng 1 dòng code  r->displayInfo()  nhưng output khác nhau\n";
+    std::cout << "  tùy đối tượng thật là Task hay Transaction.\n";
+    std::cout << "  Đây là đa hình động qua vtable (virtual dispatch).\n";
     std::cout << "-----------------------------------------------------\n";
 
     // Thu thập con trỏ Record* trỏ tới các đối tượng thực trong bộ nhớ.
@@ -312,25 +351,25 @@ static void demoPolymorphism(const TaskManager& taskMgr, const Wallet& wallet) {
         records.push_back(txns[i].get());    // shared_ptr<Transaction> → Transaction* → Record*
 
     if (records.empty()) {
-        std::cout << "  (Chua co du lieu. Hay them Task hoac Giao dich truoc.)\n";
+        std::cout << "  (Chưa có dữ liệu. Hãy thêm Task hoặc Giao dịch trước.)\n";
     } else {
         std::cout << "  " << records.size()
-                  << " doi tuong (Task + Transaction) qua con tro Record*:\n\n";
+                  << " đối tượng (Task + Transaction) qua con trỏ Record*:\n\n";
 
         for (const Record* r : records) {
-            // *** DONG THE HIEN DA HINH DONG ***
-            // Con tro 'r' co kieu Record* nhung doi tuong that la Task hoac Transaction.
-            // C++ tra cuu vtable tai runtime de goi dung displayInfo() cua lop con —
-            // mot dong code, nhieu hanh vi khac nhau.
+            // *** DÒNG THỂ HIỆN ĐA HÌNH ĐỘNG ***
+            // Con trỏ 'r' có kiểu Record* nhưng đối tượng thật là Task hoặc Transaction.
+            // C++ tra cứu vtable tại runtime để gọi đúng displayInfo() của lớp con —
+            // một dòng code, nhiều hành vi khác nhau.
             r->displayInfo();
         }
     }
 
     std::cout << "\n-----------------------------------------------------\n";
-    std::cout << "  Dong code the hien da hinh dong (main.cpp):\n";
+    std::cout << "  Dòng code thể hiện đa hình động (main.cpp):\n";
     std::cout << "    for (const Record* r : records) r->displayInfo();\n";
-    std::cout << "  -> r chi biet kieu la Record*, nhung vtable dispatch\n";
-    std::cout << "     dung phien ban displayInfo() cua kieu that luc runtime.\n";
+    std::cout << "  -> r chỉ biết kiểu là Record*, nhưng vtable dispatch\n";
+    std::cout << "     đúng phiên bản displayInfo() của kiểu thật lúc runtime.\n";
     std::cout << "=====================================================\n\n";
     InputValidator::pause();
 }
@@ -345,7 +384,7 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
     Budget      budget(currentMonth());
     int         nextTaskId = 1;
 
-    std::cout << "\n  Dang tai du lieu...\n";
+    std::cout << "\n  Đang tải dữ liệu...\n";
     loadData(uname, wallet, tm, nextTaskId);
     budget.loadLimits(userDir(uname) + "budget.cfg");
     budget.syncFromTransactions(wallet.getTransactions());
@@ -354,38 +393,38 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
     Dashboard(wallet, tm, uname).render();
 
     // ── Menu chính ────────────────────────────────────────────────────────────
-    Menu mainMenu("MENU CHINH  [" + uname + "]", "Dang xuat");
+    Menu mainMenu("MENU CHÍNH  [" + uname + "]", "Đăng xuất");
 
-    Menu taskMenu("QUAN LY TASK");
+    Menu taskMenu("QUẢN LÝ TASK");
     buildTaskMenu(taskMenu, tm, nextTaskId, uname, wallet);
-    mainMenu.addItem("Quan ly Task", [&]() { taskMenu.run(); });
+    mainMenu.addItem("Quản lý Task", [&]() { taskMenu.run(); });
 
-    Menu moneyMenu("QUAN LY TAI CHINH");
+    Menu moneyMenu("QUẢN LÝ TÀI CHÍNH");
     buildMoneyMenu(moneyMenu, wallet, budget, uname, tm);
-    mainMenu.addItem("Quan ly Tai chinh", [&]() { moneyMenu.run(); });
+    mainMenu.addItem("Quản lý Tài chính", [&]() { moneyMenu.run(); });
 
     mainMenu.addSeparator();
 
-    mainMenu.addItem("Lam moi Dashboard", [&]() {
+    mainMenu.addItem("Làm mới Dashboard", [&]() {
         budget.syncFromTransactions(wallet.getTransactions());
         Dashboard(wallet, tm, uname).render();
         InputValidator::pause();
     });
 
-    mainMenu.addItem("Demo Polymorphism (xem da hinh dong)", [&]() {
+    mainMenu.addItem("Demo Polymorphism (xem đa hình động)", [&]() {
         demoPolymorphism(tm, wallet);
     });
 
-    mainMenu.addItem("Doi mat khau", [&]() {
-        std::cout << "\n=== DOI MAT KHAU ===\n";
-        std::string oldPw = InputValidator::readPassword("  Mat khau hien tai: ", 1);
-        std::string newPw = InputValidator::readPassword("  Mat khau moi: ");
-        std::string cfmPw = InputValidator::readPassword("  Nhap lai mat khau moi: ");
+    mainMenu.addItem("Đổi mật khẩu", [&]() {
+        std::cout << "\n=== ĐỔI MẬT KHẨU ===\n";
+        std::string oldPw = InputValidator::readPassword("  Mật khẩu hiện tại: ", 1);
+        std::string newPw = InputValidator::readPassword("  Mật khẩu mới: ");
+        std::string cfmPw = InputValidator::readPassword("  Nhập lại mật khẩu mới: ");
         if (newPw != cfmPw) {
-            std::cout << "  [!] Mat khau nhap lai khong khop!\n";
+            std::cout << "  [!] Mật khẩu nhập lại không khớp!\n";
         } else {
             auth.changePassword(uname, oldPw, newPw);
-            std::cout << "  [OK] Da doi mat khau thanh cong!\n";
+            std::cout << "  [OK] Đã đổi mật khẩu thành công!\n";
         }
         InputValidator::pause();
     });
@@ -393,38 +432,38 @@ static void runSession(std::shared_ptr<User> user, AuthManager& auth) {
     mainMenu.run();
 
     // Lưu khi thoát phiên
-    std::cout << "\n  Dang luu du lieu...\n";
+    std::cout << "\n  Đang lưu dữ liệu...\n";
     saveData(uname, wallet, tm);
     budget.saveLimits(userDir(uname) + "budget.cfg");
-    std::cout << "  Tam biet, " << uname << "!\n\n";
+    std::cout << "  Tạm biệt, " << uname << "!\n\n";
 }
 
 // ── Auth flow ─────────────────────────────────────────────────────────────────
 
 static void showAuthMenu(AuthManager& auth) {
-    Menu authMenu("OPEP  -  PERSONAL BUDGET & TASK MANAGER", "Thoat");
+    Menu authMenu("OPEP  -  QUẢN LÝ TÀI CHÍNH & CÔNG VIỆC", "Thoát");
 
-    authMenu.addItem("Dang nhap", [&]() {
-        std::cout << "\n=== DANG NHAP ===\n";
+    authMenu.addItem("Đăng nhập", [&]() {
+        std::cout << "\n=== ĐĂNG NHẬP ===\n";
         std::string uname = InputValidator::readString("  Username: ", 3, 20);
         std::string pw    = InputValidator::readPassword("  Password: ", 1);
         auto user = auth.login(uname, pw);
-        std::cout << "  [OK] Dang nhap thanh cong! Xin chao, " << uname << "!\n";
+        std::cout << "  [OK] Đăng nhập thành công! Xin chào, " << uname << "!\n";
         runSession(user, auth);
     });
 
-    authMenu.addItem("Dang ky tai khoan", [&]() {
-        std::cout << "\n=== DANG KY ===\n";
-        std::string uname = InputValidator::readString("  Username (3-20 ky tu, a-z 0-9 _): ", 3, 20);
-        std::string pw    = InputValidator::readPassword("  Password (it nhat 6 ky tu): ");
-        std::string cfm   = InputValidator::readPassword("  Nhap lai password: ");
+    authMenu.addItem("Đăng ký tài khoản", [&]() {
+        std::cout << "\n=== ĐĂNG KÝ ===\n";
+        std::string uname = InputValidator::readString("  Username (3-20 ký tự, a-z 0-9 _): ", 3, 20);
+        std::string pw    = InputValidator::readPassword("  Password (ít nhất 6 ký tự): ");
+        std::string cfm   = InputValidator::readPassword("  Nhập lại password: ");
         if (pw != cfm) {
-            std::cout << "  [!] Password nhap lai khong khop!\n";
+            std::cout << "  [!] Password nhập lại không khớp!\n";
             InputValidator::pause();
             return;
         }
         auth.registerUser(uname, pw);
-        std::cout << "  [OK] Dang ky thanh cong! Moi ban dang nhap.\n";
+        std::cout << "  [OK] Đăng ký thành công! Mời bạn đăng nhập.\n";
         InputValidator::pause();
     });
 
@@ -434,6 +473,7 @@ static void showAuthMenu(AuthManager& auth) {
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 int main() {
+    setupConsoleUtf8();
     std::cout << "\n";
     try {
         AuthManager auth("data/");

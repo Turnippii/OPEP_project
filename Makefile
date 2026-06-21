@@ -3,8 +3,8 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -Iinclude
 # GCC < 9 tren Linux can them: LDFLAGS := -lstdc++fs
 LDFLAGS  :=
 
-# Phat hien OS de dat extension file dich (.exe tren Windows)
-# Yeu cau shell POSIX: Git Bash / MSYS2 tren Windows, hoac bash/sh tren Linux/macOS
+# Phát hiện OS để đặt extension file đích (.exe tren Windows)
+# Yêu cầu shell POSIX: Git Bash / MSYS2 tren Windows, hoac bash/sh tren Linux/macOS
 ifeq ($(OS),Windows_NT)
     EXE := .exe
 else
@@ -32,7 +32,7 @@ SRCS := main.cpp \
         src/ui/menu.cpp \
         src/ui/dashboard.cpp
 
-# --- Production sources (khong co main.cpp) cho test build ---
+# --- Production sources (không có main.cpp) cho test build ---
 PROD_SRCS := src/core/record.cpp \
              src/task/task.cpp \
              src/task/task_manager.cpp \
@@ -62,13 +62,13 @@ TEST_SRCS := tests/run_all_tests.cpp \
              tests/test_input_validator.cpp \
              tests/test_polymorphism.cpp
 
-.PHONY: all clean run test
+.PHONY: all clean run test gui run-gui
 
 all: $(TARGET)
 
 $(TARGET): $(SRCS) | $(BUILD)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-	@echo "[OK] Build thanh cong: $@"
+	@echo "[OK] Build thành công: $@"
 
 $(BUILD):
 	mkdir -p $@
@@ -76,17 +76,26 @@ $(BUILD):
 run: all
 	$(TARGET)
 
-# Build va chay toan bo unit test
+# Build và chạy toàn bộ unit test
 test: $(TEST_TARGET)
 	$(TEST_TARGET)
 
 $(TEST_TARGET): $(TEST_SRCS) $(PROD_SRCS) | $(TEST_BUILD)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-	@echo "[OK] Build test thanh cong: $@"
+	@echo "[OK] Build test thành công: $@"
 
 $(TEST_BUILD):
 	mkdir -p $@
 
+# Build GUI Qt bằng CMake.
+# Yêu cầu đã cài Qt Widgets và CMake trong MSYS2/Qt Creator.
+gui:
+	cmake -S . -B build-gui
+	cmake --build build-gui
+
+run-gui: gui
+	./build-gui/opep_gui$(EXE)
+
 clean:
-	$(RMDIR) $(BUILD)
-	@echo "[OK] Da xoa $(BUILD)/"
+	$(RMDIR) $(BUILD) build-gui
+	@echo "[OK] Đã xóa $(BUILD)/ và build-gui/"

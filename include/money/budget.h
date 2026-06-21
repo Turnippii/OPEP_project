@@ -47,6 +47,11 @@ public:
     // Thiết lập hạn mức cho một danh mục (ghi đè nếu đã tồn tại)
     void setLimit(const std::string& category, double limit);
 
+    // Xóa hạn mức của một danh mục.
+    // Nếu danh mục đã có chi tiêu trong tháng thì giữ lại dòng danh mục với limit = 0.
+    // Trả về true nếu có hạn mức để xóa, false nếu danh mục đã không giới hạn.
+    bool removeLimit(const std::string& category);
+
     // Ghi nhận khoản chi vào danh mục
     // Ném BudgetExceededException nếu vượt hạn mức
     // Trả về true nếu đang trong vùng cảnh báo (>= WARNING_THRESHOLD)
@@ -63,6 +68,9 @@ public:
     double totalSpent() const;
 
     const std::string& getMonth() const;
+
+    // Trả về toàn bộ danh mục ngân sách để UI/GUI có thể đọc dữ liệu hiển thị
+    const std::map<std::string, CategoryBudget>& getCategories() const;
 
     // Hiển thị bảng ngân sách với progress bar ASCII
     void displayBudget() const;

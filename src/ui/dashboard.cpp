@@ -9,6 +9,38 @@
 
 namespace opep {
 
+static int utf8Width(const std::string& s) {
+    int w = 0;
+    for (unsigned char c : s)
+        if ((c & 0xC0) != 0x80) ++w;
+    return w;
+}
+
+static std::string utf8FitLeft(const std::string& s, int width) {
+    if (width <= 0) return "";
+    int w = utf8Width(s);
+    if (w <= width) return s + std::string(width - w, ' ');
+
+    int target = std::max(0, width - 3);
+    int cur = 0;
+    size_t i = 0;
+    while (i < s.size() && cur < target) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t cl = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : (c >= 0xC0) ? 2 : 1;
+        ++cur;
+        i += cl;
+    }
+    return s.substr(0, i) + "...";
+}
+
+static std::string utf8Center(const std::string& s, int width) {
+    int w = utf8Width(s);
+    if (w >= width) return utf8FitLeft(s, width);
+    int left = (width - w) / 2;
+    int right = width - w - left;
+    return std::string(left, ' ') + s + std::string(right, ' ');
+}
+
 // Tách year và month từ "YYYY-MM-DD" thành cặp số nguyên để so sánh an toàn
 static std::pair<int,int> parseYearMonth(const std::string& d) {
     if (d.size() < 7) return {0, 0};
@@ -117,20 +149,13 @@ void Dashboard::hLine(char corner, char fill, int w) {
 }
 
 void Dashboard::row(const std::string& content, int w) {
-    int inner = w - 4; // 2 border + 2 padding
-    std::string s = content.substr(0, static_cast<size_t>(inner));
-    std::cout << "|  " << std::left << std::setw(inner) << s << "  |\n";
+    int inner = w - 2; // bỏ 2 ký tự viền trái/phải
+    std::cout << "|" << utf8FitLeft("  " + content, inner) << "|\n";
 }
 
 void Dashboard::rowCenter(const std::string& content, int w) {
     int inner = w - 2;
-    int pad   = (inner - static_cast<int>(content.size())) / 2;
-    pad       = std::max(0, pad);
-    std::string line = std::string(pad, ' ') + content;
-    // Đảm bảo không vượt quá inner
-    if (static_cast<int>(line.size()) > inner)
-        line = line.substr(0, static_cast<size_t>(inner));
-    std::cout << "|" << std::left << std::setw(inner) << line << "|\n";
+    std::cout << "|" << utf8Center(content, inner) << "|\n";
 }
 
 std::string Dashboard::fmtMoney(double amount) {
@@ -158,17 +183,17 @@ void Dashboard::render() const {
 
     // ===================== HEADER =====================
     hLine('+', '=', W);
-    rowCenter("OPEP - PERSONAL BUDGET & TASK MANAGER", W);
-    rowCenter("Xin chao, " + username + "!   |   " + today, W);
+    rowCenter("OPEP - QUẢN LÝ TÀI CHÍNH & CÔNG VIỆC", W);
+    rowCenter("Xin chào, " + username + "!   |   " + today, W);
     hLine('+', '=', W);
 
-    // ===================== SO DU VI =====================
-    row("SO DU VI", W);
+    // ===================== SỐ DƯ VÍ =====================
+    row("SỐ DƯ VÍ", W);
     hLine('+', '-', W);
     row("  " + fmtMoney(wallet.getBalance()), W);
     row("", W);
-    row("  Thu thang nay:  " + fmtSigned(getMonthIncome()), W);
-    row("  Chi thang nay:  " + fmtSigned(-getMonthExpense()), W);
+    row("  Thu tháng này:  " + fmtSigned(getMonthIncome()), W);
+    row("  Chi tháng này:  " + fmtSigned(-getMonthExpense()), W);
 
     // Progress bar thu/chi trong tháng
     double inc = getMonthIncome();
@@ -180,17 +205,17 @@ void Dashboard::render() const {
         std::string bar = "  [" + std::string(filled, '#')
                         + std::string(barW - filled, '.') + "]";
         std::string pct = std::to_string(static_cast<int>((exp / inc) * 100)) + "%";
-        row(bar + "  " + pct + " da chi", W);
+        row(bar + "  " + pct + " đã chi", W);
     }
 
-    // ===================== TASK SAP HAN =====================
+    // ===================== TASK SẮP HẠN =====================
     hLine('+', '=', W);
-    row("TASK SAP DEN HAN (trong 3 ngay toi)", W);
+    row("TASK SẮP ĐẾN HẠN (trong 3 ngày tới)", W);
     hLine('+', '-', W);
 
     auto upcoming = getUpcomingTasks(3);
     if (upcoming.empty()) {
-        row("  (Khong co task nao sap den han)", W);
+        row("  (Không có task nào sắp đến hạn)", W);
     } else {
         for (const Task* t : upcoming) {
             // Tính số ngày còn lại
@@ -206,15 +231,15 @@ void Dashboard::render() const {
             }
             std::string prefix = (daysLeft == 0) ? "  [!!] " : "  [!]  ";
             std::string suffix = (daysLeft == 0)
-                ? " (HOM NAY!)"
-                : " (con " + std::to_string(daysLeft) + " ngay)";
+                ? " (HÔM NAY!)"
+                : " (còn " + std::to_string(daysLeft) + " ngày)";
             row(prefix + t->getTitle() + suffix, W);
         }
     }
 
-    // ===================== CHI TIEU HOM NAY =====================
+    // ===================== CHI TIÊU HÔM NAY =====================
     hLine('+', '=', W);
-    row("CHI TIEU HOM NAY (" + today + ")", W);
+    row("CHI TIÊU HÔM NAY (" + today + ")", W);
     hLine('+', '-', W);
 
     double todayTotal = 0.0;
@@ -226,19 +251,19 @@ void Dashboard::render() const {
         todayTotal += t->getAmount();
         hasToday = true;
     }
-    if (!hasToday) row("  (Chua co giao dich nao hom nay)", W);
+    if (!hasToday) row("  (Chưa có giao dịch nào hôm nay)", W);
 
     hLine('+', '-', W);
-    row("  Tong chi hom nay: " + fmtMoney(todayTotal), W);
+    row("  Tổng chi hôm nay: " + fmtMoney(todayTotal), W);
 
     // ===================== FOOTER =====================
     hLine('+', '=', W);
 
     size_t total     = taskManager.count();
     size_t completed = taskManager.countCompleted();
-    std::string taskStat = "Task hoan thanh: " + std::to_string(completed)
+    std::string taskStat = "Task hoàn thành: " + std::to_string(completed)
                          + "/" + std::to_string(total);
-    std::string txnStat  = "Tong giao dich: "
+    std::string txnStat  = "Tổng giao dịch: "
                          + std::to_string(wallet.getTransactions().size());
     row(taskStat + "   |   " + txnStat, W);
     hLine('+', '=', W);

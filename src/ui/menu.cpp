@@ -3,8 +3,41 @@
 #include "../../include/core/exceptions.h"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 namespace opep {
+
+static int utf8Width(const std::string& s) {
+    int w = 0;
+    for (unsigned char c : s)
+        if ((c & 0xC0) != 0x80) ++w;
+    return w;
+}
+
+static std::string utf8FitLeft(const std::string& s, int width) {
+    if (width <= 0) return "";
+    int w = utf8Width(s);
+    if (w <= width) return s + std::string(width - w, ' ');
+
+    int target = std::max(0, width - 3);
+    int cur = 0;
+    size_t i = 0;
+    while (i < s.size() && cur < target) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t cl = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : (c >= 0xC0) ? 2 : 1;
+        ++cur;
+        i += cl;
+    }
+    return s.substr(0, i) + "...";
+}
+
+static std::string utf8Center(const std::string& s, int width) {
+    int w = utf8Width(s);
+    if (w >= width) return utf8FitLeft(s, width);
+    int left = (width - w) / 2;
+    int right = width - w - left;
+    return std::string(left, ' ') + s + std::string(right, ' ');
+}
 
 static constexpr int MENU_WIDTH = 44;
 
@@ -35,7 +68,7 @@ void Menu::display() const {
     };
     auto padRow = [](const std::string& s) {
         int inner = MENU_WIDTH - 2;
-        std::cout << "| " << std::left << std::setw(inner - 1) << s << "|\n";
+        std::cout << "|" << utf8FitLeft(" " + s, inner) << "|\n";
     };
 
     std::cout << "\n";
@@ -43,10 +76,7 @@ void Menu::display() const {
 
     // Tiêu đề căn giữa
     int inner = MENU_WIDTH - 2;
-    int pad   = (inner - static_cast<int>(title.size())) / 2;
-    pad       = std::max(0, pad);
-    std::string centered = std::string(pad, ' ') + title;
-    std::cout << "| " << std::left << std::setw(inner - 1) << centered << "|\n";
+    std::cout << "|" << utf8Center(title, inner) << "|\n";
 
     hLine('=');
 
@@ -63,7 +93,7 @@ void Menu::display() const {
     hLine('-');
     padRow("  [0] " + backLabel);
     hLine('=');
-    std::cout << "  Chon: ";
+    std::cout << "  Chọn: ";
 }
 
 // --- run ---
@@ -84,10 +114,10 @@ void Menu::run() {
                 try {
                     if (item.action) item.action();
                 } catch (const OPEPException& e) {
-                    std::cout << "\n  [LOI] " << e.what() << "\n";
+                    std::cout << "\n  [LỖI] " << e.what() << "\n";
                     InputValidator::pause();
                 } catch (const std::exception& e) {
-                    std::cout << "\n  [LOI] " << e.what() << "\n";
+                    std::cout << "\n  [LỖI] " << e.what() << "\n";
                     InputValidator::pause();
                 }
                 break;

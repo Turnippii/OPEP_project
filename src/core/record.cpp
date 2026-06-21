@@ -4,12 +4,12 @@
 namespace opep {
 
 // Khởi tạo Record với id, ngày và tiêu đề
-// Validate tiêu đề không rỗng ngay tại constructor
+// Validate tiêu đề không rỗng ngày tại constructor
 Record::Record(int id, const std::string& date, const std::string& title)
     : id(id), date(date), title(title)
 {
     if (title.empty()) {
-        throw InvalidInputException("Tieu de khong duoc de trong");
+        throw InvalidInputException("Tiêu đề không được để trống");
     }
 }
 
@@ -31,14 +31,14 @@ const std::string& Record::getTitle() const {
 
 void Record::setDate(const std::string& newDate) {
     if (newDate.empty()) {
-        throw InvalidInputException("Ngay khong duoc de trong");
+        throw InvalidInputException("Ngày không được để trống");
     }
     date = newDate;
 }
 
 void Record::setTitle(const std::string& newTitle) {
     if (newTitle.empty()) {
-        throw InvalidInputException("Tieu de khong duoc de trong");
+        throw InvalidInputException("Tiêu đề không được để trống");
     }
     title = newTitle;
 }
@@ -48,7 +48,7 @@ bool Record::operator==(const Record& other) const {
     return id == other.id;
 }
 
-// In thông tin cơ bản; lớp con có thể mở rộng bằng displayInfo()
+// In thông tin cơ bản; lớp còn có thể mở rộng bằng displayInfo()
 std::ostream& operator<<(std::ostream& os, const Record& record) {
     os << "[ID:" << record.id << "] "
        << record.date << " | "

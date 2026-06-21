@@ -80,7 +80,7 @@ Budget::Budget(const std::string& m) : month(m) {}
 
 void Budget::setLimit(const std::string& category, double limit) {
     if (limit < 0.0)
-        throw InvalidInputException("Han muc ngan sach phai >= 0");
+        throw InvalidInputException("Hạn mức ngân sách phải >= 0");
 
     // Map key luôn là normalized; CategoryBudget.category giữ tên gốc để hiển thị
     std::string key = normalizeKey(category);
@@ -91,9 +91,28 @@ void Budget::setLimit(const std::string& category, double limit) {
         categories.emplace(key, CategoryBudget(category, limit));
 }
 
+bool Budget::removeLimit(const std::string& category) {
+    std::string key = normalizeKey(category);
+    auto it = categories.find(key);
+    if (it == categories.end())
+        throw InvalidInputException("Không tìm thấy danh mục: " + category);
+
+    if (it->second.limit <= 0.0)
+        return false;
+
+    it->second.limit = 0.0;
+
+    // Nếu danh mục này chỉ tồn tại vì hạn mức và chưa có chi tiêu trong tháng,
+    // xóa hẳn khỏi bảng để giao diện gọn hơn.
+    if (it->second.spent <= 0.0)
+        categories.erase(it);
+
+    return true;
+}
+
 bool Budget::recordExpense(const std::string& category, double amount) {
     if (amount < 0.0)
-        throw InvalidInputException("So tien chi tieu phai >= 0");
+        throw InvalidInputException("Số tiền chi tiêu phải >= 0");
 
     std::string key = normalizeKey(category);
     if (!categories.count(key))
@@ -129,7 +148,7 @@ void Budget::syncFromTransactions(const std::vector<std::shared_ptr<Transaction>
 const CategoryBudget& Budget::getCategory(const std::string& category) const {
     auto it = categories.find(normalizeKey(category));
     if (it == categories.end())
-        throw InvalidInputException("Khong tim thay danh muc: " + category);
+        throw InvalidInputException("Không tìm thấy danh mục: " + category);
     return it->second;
 }
 
@@ -147,10 +166,12 @@ double Budget::totalSpent() const {
 
 const std::string& Budget::getMonth() const { return month; }
 
+const std::map<std::string, CategoryBudget>& Budget::getCategories() const { return categories; }
+
 // --- displayBudget: bảng ngân sách với progress bar ASCII ---
 
 void Budget::displayBudget() const {
-    // Cột: Danh muc(25) | Da chi(15) | Han muc(15) | %(6) | Tien do(20) | Trang thai(20)
+    // Cột: Danh mục(25) | Đã chi(15) | Hạn mức(15) | %(6) | Tiến độ(20) | Trạng thái(20)
     constexpr int W_CAT    = 25;
     constexpr int W_SPENT  = 15;
     constexpr int W_LIMIT  = 15;
@@ -160,21 +181,21 @@ void Budget::displayBudget() const {
     constexpr int W_STATUS = 20;
     constexpr int TOTAL_W  = W_CAT + W_SPENT + W_LIMIT + W_PCT + 2 + W_BAR + W_STATUS;
 
-    std::cout << "\n=== Ngan sach thang " << month << " ===\n";
+    std::cout << "\n=== Ngân sách tháng " << month << " ===\n";
 
     // Header
-    std::cout << std::left  << std::setw(W_CAT)   << "Danh muc"
-              << std::right << std::setw(W_SPENT)  << "Da chi (VND)"
-              << std::setw(W_LIMIT)                << "Han muc (VND)"
+    std::cout << std::left  << std::setw(W_CAT)   << "Danh mục"
+              << std::right << std::setw(W_SPENT)  << "Đã chi (VND)"
+              << std::setw(W_LIMIT)                << "Hạn mức (VND)"
               << std::setw(W_PCT)                  << "%"
               << "  "
-              << std::left  << std::setw(W_BAR)    << "Tien do"
-              << std::setw(W_STATUS)               << "Trang thai"
+              << std::left  << std::setw(W_BAR)    << "Tiến độ"
+              << std::setw(W_STATUS)               << "Trạng thái"
               << "\n";
     std::cout << std::string(TOTAL_W, '-') << "\n";
 
     if (categories.empty()) {
-        std::cout << "  (Chua co danh muc nao. Dat han muc qua option 'Dat han muc'.)\n";
+        std::cout << "  (Chưa có danh mục nào. Hãy đặt hạn mức qua mục 'Đặt hạn mức'.)\n";
     }
 
     for (const auto& [key, cb] : categories) {
@@ -190,13 +211,13 @@ void Budget::displayBudget() const {
                         + std::string(BAR_FILL - filled, '.') + "]";
 
         // Chuỗi % (right-aligned trong W_PCT)
-        std::string pctStr = (cb.limit > 0.0) ? (std::to_string(pct) + "%") : "n/a";
+        std::string pctStr = (cb.limit > 0.0) ? (std::to_string(pct) + "%") : "không";
 
         // Trạng thái
         std::string status;
-        if (cb.limit <= 0.0)       status = "(khong gioi han)";
-        else if (cb.isExceeded())  status = "[!!] VUOT HAN MUC!";
-        else if (cb.isNearLimit()) status = "[!]  CANH BAO >=80%";
+        if (cb.limit <= 0.0)       status = "(không giới hạn)";
+        else if (cb.isExceeded())  status = "[!!] VƯỢT HẠN MỨC!";
+        else if (cb.isNearLimit()) status = "[!]  CẢNH BÁO >=80%";
         else                       status = "[ ]  OK";
 
         std::cout << dispCat  // đã có padding chính xác W_CAT cột
@@ -211,7 +232,7 @@ void Budget::displayBudget() const {
     }
 
     std::cout << std::string(TOTAL_W, '-') << "\n";
-    std::cout << std::left  << std::setw(W_CAT)   << "TONG CONG"
+    std::cout << std::left  << std::setw(W_CAT)   << "TỔNG CỘNG"
               << std::right << std::fixed << std::setprecision(0)
               << std::setw(W_SPENT) << totalSpent()
               << std::setw(W_LIMIT) << totalLimit()

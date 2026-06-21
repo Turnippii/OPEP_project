@@ -25,8 +25,8 @@ Priority stringToPriority(const std::string& s) {
     if (upper == "MEDIUM") return Priority::MEDIUM;
     if (upper == "LOW")    return Priority::LOW;
 
-    throw InvalidInputException("Muc do uu tien khong hop le: '" + s
-                                + "'. Chi chap nhan: HIGH, MEDIUM, LOW");
+    throw InvalidInputException("Mức độ ưu tiên không hợp lệ: '" + s
+                                + "'. Chỉ chấp nhận: HIGH, MEDIUM, LOW");
 }
 
 // --- Task constructor ---
@@ -81,7 +81,7 @@ void Task::displayInfo() const {
               << static_cast<const Record&>(*this)
               << " " << priorityTag;
 
-    if (!deadline.empty()) std::cout << " | Han: " << deadline;
+    if (!deadline.empty()) std::cout << " | Hạn: " << deadline;
     std::cout << "\n";
 }
 

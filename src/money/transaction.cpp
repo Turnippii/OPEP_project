@@ -13,7 +13,7 @@ std::string transactionTypeToString(TransactionType t) {
 TransactionType stringToTransactionType(const std::string& s) {
     if (s == "INCOME")  return TransactionType::INCOME;
     if (s == "EXPENSE") return TransactionType::EXPENSE;
-    throw InvalidInputException("Loai giao dich khong hop le: " + s);
+    throw InvalidInputException("Loại giao dịch không hợp lệ: " + s);
 }
 
 // --- Constructor ---
@@ -32,9 +32,9 @@ Transaction::Transaction(int id,
     , note(note)
 {
     if (amount < 0.0)
-        throw InvalidInputException("So tien giao dich phai >= 0");
+        throw InvalidInputException("Số tiền giao dịch phải >= 0");
     if (category.empty())
-        throw InvalidInputException("Danh muc khong duoc de trong");
+        throw InvalidInputException("Danh mục không được để trống");
 }
 
 // --- Getter ---
@@ -48,13 +48,13 @@ const std::string& Transaction::getNote()     const { return note; }
 
 void Transaction::setAmount(double a) {
     if (a < 0.0)
-        throw InvalidInputException("So tien giao dich phai >= 0");
+        throw InvalidInputException("Số tiền giao dịch phải >= 0");
     amount = a;
 }
 
 void Transaction::setCategory(const std::string& cat) {
     if (cat.empty())
-        throw InvalidInputException("Danh muc khong duoc de trong");
+        throw InvalidInputException("Danh mục không được để trống");
     category = cat;
 }
 

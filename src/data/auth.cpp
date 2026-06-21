@@ -13,18 +13,18 @@ namespace fs = std::filesystem;
 
 void AuthManager::validateUsername(const std::string& username) {
     if (username.size() < 3 || username.size() > 20)
-        throw InvalidInputException("Username phai tu 3 den 20 ky tu");
+        throw InvalidInputException("Username phải từ 3 đến 20 ký tự");
 
     bool valid = std::all_of(username.begin(), username.end(), [](char c) {
         return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
     });
     if (!valid)
-        throw InvalidInputException("Username chi duoc dung a-z, A-Z, 0-9, _");
+        throw InvalidInputException("Username chỉ được dùng a-z, A-Z, 0-9, _");
 }
 
 void AuthManager::validatePassword(const std::string& password) {
     if (password.size() < 6)
-        throw InvalidInputException("Password phai co it nhat 6 ky tu");
+        throw InvalidInputException("Password phải có ít nhất 6 ký tự");
 }
 
 std::string AuthManager::currentDate() {
@@ -55,7 +55,7 @@ std::shared_ptr<User> AuthManager::registerUser(const std::string& username,
     validatePassword(password);
 
     if (userExists(username))
-        throw AuthenticationException("Username '" + username + "' da ton tai");
+        throw AuthenticationException("Username '" + username + "' đã tồn tại");
 
     std::string hash = hashPassword(password);
     User newUser(username, hash, currentDate());
@@ -70,11 +70,11 @@ std::shared_ptr<User> AuthManager::login(const std::string& username,
                                           const std::string& password)
 {
     if (username.empty() || password.empty())
-        throw InvalidInputException("Username va password khong duoc de trong");
+        throw InvalidInputException("Username và password không được để trống");
 
     // Không phân biệt "sai username" hay "sai password" để tránh user enumeration
     auto throwFail = []() {
-        throw AuthenticationException("Ten dang nhap hoac mat khau khong dung");
+        throw AuthenticationException("Tên đăng nhập hoặc mật khẩu không đúng");
     };
 
     if (!userDb.exists()) throwFail();
@@ -102,7 +102,7 @@ void AuthManager::changePassword(const std::string& username,
     validatePassword(newPassword);
 
     if (!userDb.exists())
-        throw AuthenticationException("Khong tim thay tai khoan: " + username);
+        throw AuthenticationException("Không tìm thấy tài khoản: " + username);
 
     std::vector<User> users = userDb.load();
     std::string oldHash = hashPassword(oldPassword);
@@ -112,7 +112,7 @@ void AuthManager::changePassword(const std::string& username,
     for (auto& u : users) {
         if (u.getUsername() == username) {
             if (u.getPasswordHash() != oldHash)
-                throw AuthenticationException("Mat khau cu khong dung");
+                throw AuthenticationException("Mật khẩu cũ không đúng");
             u.setPasswordHash(newHash);
             found = true;
             break;
@@ -120,7 +120,7 @@ void AuthManager::changePassword(const std::string& username,
     }
 
     if (!found)
-        throw AuthenticationException("Khong tim thay tai khoan: " + username);
+        throw AuthenticationException("Không tìm thấy tài khoản: " + username);
 
     userDb.save(users);
 }

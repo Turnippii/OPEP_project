@@ -34,7 +34,7 @@ public:
     static bool confirm(const std::string& prompt);
 
     // Tạm dừng và chờ người dùng nhấn Enter
-    static void pause(const std::string& msg = "Nhan Enter de tiep tuc...");
+    static void pause(const std::string& msg = "Nhấn Enter để tiếp tục...");
 
 private:
     // Kiểm tra chuỗi có đúng định dạng YYYY-MM-DD và ngày hợp lệ không

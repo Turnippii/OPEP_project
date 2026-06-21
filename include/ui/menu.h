@@ -22,7 +22,7 @@ private:
     std::string           title;
     std::vector<MenuItem> items;
     bool                  running;
-    std::string           backLabel; // Nhãn mục [0]: "Quay lai" hoặc "Thoat"
+    std::string           backLabel; // Nhãn mục [0]: "Quay lại" hoặc "Thoát"
 
     // In khung menu ra stdout
     void display() const;
@@ -31,9 +31,9 @@ private:
     int countItems() const;
 
 public:
-    // backLabel = "Thoat" cho menu gốc, "Quay lai" cho submenu
+    // backLabel = "Thoát" cho menu gốc, "Quay lại" cho submenu
     explicit Menu(const std::string& title,
-                  const std::string& backLabel = "Quay lai");
+                  const std::string& backLabel = "Quay lại");
 
     // Thêm một mục có hành động
     void addItem(const std::string& label, std::function<void()> action);
@@ -45,7 +45,7 @@ public:
     // Exception từ action được bắt, in lỗi, rồi tiếp tục vòng lặp
     void run();
 
-    // Dừng vòng lặp từ bên trong một action (dùng cho "Dang xuat")
+    // Dừng vòng lặp từ bên trong một action (dùng cho "Đăng xuất")
     void stop();
 };
 

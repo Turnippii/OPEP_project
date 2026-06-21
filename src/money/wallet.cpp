@@ -11,7 +11,7 @@ Wallet::Wallet(const std::string& owner, double initialBalance)
     , ownerUsername(owner)
 {
     if (initialBalance < 0.0)
-        throw InvalidInputException("So du ban dau khong duoc am");
+        throw InvalidInputException("Số dư ban đầu không được âm");
 }
 
 // --- Getter ---
@@ -46,7 +46,7 @@ std::shared_ptr<Transaction> Wallet::addIncome(double amount,
                                                 const std::string& note)
 {
     if (amount <= 0.0)
-        throw InvalidInputException("So tien thu nhap phai > 0");
+        throw InvalidInputException("Số tiền thu nhập phải > 0");
 
     auto txn = std::make_shared<Transaction>(
         nextId++, date, title, amount, TransactionType::INCOME, category, note
@@ -65,7 +65,7 @@ std::shared_ptr<Transaction> Wallet::addExpense(double amount,
                                                  const std::string& note)
 {
     if (amount <= 0.0)
-        throw InvalidInputException("So tien chi tieu phai > 0");
+        throw InvalidInputException("Số tiền chi tiêu phải > 0");
     if (amount > balance)
         throw InsufficientBalanceException(amount, balance);
 
@@ -96,12 +96,12 @@ double Wallet::totalExpense() const {
 // --- displaySummary ---
 
 void Wallet::displaySummary() const {
-    std::cout << "=== Vi cua: " << ownerUsername << " ===\n";
+    std::cout << "=== Ví của: " << ownerUsername << " ===\n";
     std::cout << std::fixed << std::setprecision(0);
-    std::cout << "  So du    : " << std::setw(15) << balance        << " VND\n";
-    std::cout << "  Thu nhap : " << std::setw(15) << totalIncome()  << " VND\n";
-    std::cout << "  Chi tieu : " << std::setw(15) << totalExpense() << " VND\n";
-    std::cout << "  Giao dich: " << transactions.size() << " ban ghi\n";
+    std::cout << "  Số dư    : " << std::setw(15) << balance        << " VND\n";
+    std::cout << "  Thu nhập : " << std::setw(15) << totalIncome()  << " VND\n";
+    std::cout << "  Chi tiêu : " << std::setw(15) << totalExpense() << " VND\n";
+    std::cout << "  Giao dịch: " << transactions.size() << " bản ghi\n";
 }
 
 // --- operator<< ---
@@ -109,7 +109,7 @@ void Wallet::displaySummary() const {
 std::ostream& operator<<(std::ostream& os, const Wallet& w) {
     os << "Wallet[" << w.ownerUsername << "] "
        << "balance=" << std::fixed << std::setprecision(0) << w.balance << " VND "
-       << "(" << w.transactions.size() << " giao dich)";
+       << "(" << w.transactions.size() << " giao dịch)";
     return os;
 }
 

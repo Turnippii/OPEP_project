@@ -27,11 +27,11 @@ TaskManager::findIterById(int id) const {
 
 void TaskManager::addTask(std::unique_ptr<Task> task) {
     if (!task) {
-        throw InvalidInputException("Khong the them task null");
+        throw InvalidInputException("Không thể thêm task null");
     }
     if (findIterById(task->getId()) != tasks.end()) {
         throw InvalidInputException(
-            "Da ton tai task voi ID: " + std::to_string(task->getId()));
+            "Đã tồn tại task với ID: " + std::to_string(task->getId()));
     }
     tasks.push_back(std::move(task));
 }
@@ -42,7 +42,7 @@ void TaskManager::removeTask(int id) {
     auto it = findIterById(id);
     if (it == tasks.end()) {
         throw InvalidInputException(
-            "Khong tim thay task voi ID: " + std::to_string(id));
+            "Không tìm thấy task với ID: " + std::to_string(id));
     }
     tasks.erase(it); // unique_ptr tự giải phóng Task khi bị erase
 }
@@ -53,7 +53,7 @@ void TaskManager::markDone(int id) {
     auto it = findIterById(id);
     if (it == tasks.end()) {
         throw InvalidInputException(
-            "Khong tim thay task voi ID: " + std::to_string(id));
+            "Không tìm thấy task với ID: " + std::to_string(id));
     }
     (*it)->setCompleted(true);
 }
@@ -69,7 +69,7 @@ void TaskManager::sortByPriority() {
         });
 }
 
-// --- getById: trả về con trỏ const, không transfer ownership ---
+// --- getById: trả về còn trỏ const, không transfer ownership ---
 
 const Task* TaskManager::getById(int id) const {
     auto it = findIterById(id);
@@ -103,13 +103,13 @@ std::size_t TaskManager::countCompleted() const {
 
 void TaskManager::displayAll() const {
     if (tasks.empty()) {
-        std::cout << "Chua co task nao.\n";
+        std::cout << "Chưa có task nào.\n";
         return;
     }
 
     std::cout << "+-----------------------------------------+\n";
-    std::cout << "| DANH SACH CONG VIEC ("
-              << countCompleted() << "/" << count() << " hoan thanh) |\n";
+    std::cout << "| DANH SÁCH CÔNG VIỆC ("
+              << countCompleted() << "/" << count() << " hoàn thành) |\n";
     std::cout << "+-----------------------------------------+\n";
 
     for (const auto& task : tasks) {

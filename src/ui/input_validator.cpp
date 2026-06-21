@@ -22,7 +22,7 @@ int InputValidator::readInt(const std::string& prompt, int min, int max) {
         std::cout << prompt;
         std::string line;
         if (!std::getline(std::cin, line))
-            throw InvalidInputException("Loi doc input (stream fail)");
+            throw InvalidInputException("Lỗi đọc input (stream fail)");
 
         try {
             size_t pos;
@@ -30,13 +30,13 @@ int InputValidator::readInt(const std::string& prompt, int min, int max) {
             // Đảm bảo không có ký tự thừa sau số
             if (pos != line.size()) throw std::invalid_argument("");
             if (val < min || val > max) {
-                std::cout << "  [!] Vui long nhap so tu " << min
-                          << " den " << max << "\n";
+                std::cout << "  [!] Vui lòng nhập số từ " << min
+                          << " đến " << max << "\n";
                 continue;
             }
             return val;
         } catch (const std::exception&) {
-            std::cout << "  [!] Vui long nhap so nguyen hop le\n";
+            std::cout << "  [!] Vui lòng nhập số nguyên hợp lệ\n";
         }
     }
 }
@@ -48,23 +48,23 @@ double InputValidator::readDouble(const std::string& prompt, double min, double 
         std::cout << prompt;
         std::string line;
         if (!std::getline(std::cin, line))
-            throw InvalidInputException("Loi doc input (stream fail)");
+            throw InvalidInputException("Lỗi đọc input (stream fail)");
 
         try {
             size_t pos;
             double val = std::stod(line, &pos);
             if (pos != line.size()) throw std::invalid_argument("");
             if (val < min) {
-                std::cout << "  [!] Gia tri phai >= " << min << "\n";
+                std::cout << "  [!] Giá trị phải >= " << min << "\n";
                 continue;
             }
             if (max > 0.0 && val > max) {
-                std::cout << "  [!] Gia tri phai <= " << max << "\n";
+                std::cout << "  [!] Giá trị phải <= " << max << "\n";
                 continue;
             }
             return val;
         } catch (const std::exception&) {
-            std::cout << "  [!] Vui long nhap so thuc hop le\n";
+            std::cout << "  [!] Vui lòng nhập số thực hợp lệ\n";
         }
     }
 }
@@ -76,15 +76,15 @@ std::string InputValidator::readString(const std::string& prompt, int minLen, in
         std::cout << prompt;
         std::string line;
         if (!std::getline(std::cin, line))
-            throw InvalidInputException("Loi doc input (stream fail)");
+            throw InvalidInputException("Lỗi đọc input (stream fail)");
 
         int len = static_cast<int>(line.size());
         if (len < minLen) {
-            std::cout << "  [!] Chuoi phai co it nhat " << minLen << " ky tu\n";
+            std::cout << "  [!] Chuỗi phải có ít nhất " << minLen << " ký tự\n";
             continue;
         }
         if (len > maxLen) {
-            std::cout << "  [!] Chuoi khong duoc qua " << maxLen << " ky tu\n";
+            std::cout << "  [!] Chuỗi không được quá " << maxLen << " ký tự\n";
             continue;
         }
         return line;
@@ -120,12 +120,12 @@ std::string InputValidator::readDate(const std::string& prompt, bool allowEmpty)
         std::cout << prompt;
         std::string line;
         if (!std::getline(std::cin, line))
-            throw InvalidInputException("Loi doc input (stream fail)");
+            throw InvalidInputException("Lỗi đọc input (stream fail)");
 
         if (allowEmpty && line.empty()) return "";
 
         if (!isValidDate(line)) {
-            std::cout << "  [!] Dinh dang ngay phai la YYYY-MM-DD (vd: 2026-05-25)\n";
+            std::cout << "  [!] Định dạng ngày phải là YYYY-MM-DD (vd: 2026-05-25)\n";
             continue;
         }
         return line;
@@ -167,7 +167,7 @@ std::string InputValidator::readPassword(const std::string& prompt, int minLen) 
 #endif
 
         if (static_cast<int>(pw.size()) < minLen) {
-            std::cout << "  [!] Mat khau phai co it nhat " << minLen << " ky tu\n";
+            std::cout << "  [!] Mật khẩu phải có ít nhất " << minLen << " ký tự\n";
             continue;
         }
         return pw;
@@ -183,7 +183,7 @@ bool InputValidator::confirm(const std::string& prompt) {
         if (!std::getline(std::cin, line)) return false;
         if (line == "y" || line == "Y") return true;
         if (line == "n" || line == "N") return false;
-        std::cout << "  [!] Vui long nhap 'y' hoac 'n'\n";
+        std::cout << "  [!] Vui lòng nhập 'y' hoặc 'n'\n";
     }
 }
 
